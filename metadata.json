@@ -1,0 +1,5 @@
+{
+  "name": "DietlyPlans",
+  "description": "An AI-powered SaaS for personalized 30-day meal planning. Features 'Leftover Logic' for busy professionals, hydration tracking, and client-side PDF generation.",
+  "requestFramePermissions": []
+}
