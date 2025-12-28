@@ -304,38 +304,38 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
         <div className="max-w-5xl mx-auto space-y-8 pb-32">
 
             {/* 1. Header & Global Stats */}
-            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-4 px-2 md:px-0">
                 <div>
-                    <h2 className="text-3xl font-black text-dark tracking-tight">
+                    <h2 className="text-2xl md:text-3xl font-black text-dark tracking-tight">
                         Welcome, <span className="text-primary">{plan.userStats.name}</span>
                     </h2>
-                    <p className="text-slate-400 font-medium">Here is your daily transformation protocol.</p>
+                    <p className="text-slate-400 text-sm md:text-base font-medium">Here is your daily transformation protocol.</p>
                 </div>
-                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
-                    <User className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{plan.userStats.goal} MODE</span>
+                <div className="flex items-center gap-2 bg-white px-3 md:px-4 py-1.5 md:py-2 rounded-full border border-slate-100 shadow-sm w-fit">
+                    <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-400" />
+                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">{plan.userStats.goal} MODE</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-2 md:px-0">
                 {/* Phase Target */}
-                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-2 relative overflow-hidden group">
+                <div className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-1.5 md:gap-2 relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-orange-400"></div>
-                    <div className="p-3 bg-orange-50 rounded-2xl text-orange-500 mb-1 group-hover:scale-110 transition-transform">
-                        <Flame className="w-6 h-6 fill-orange-500/20" />
+                    <div className="p-2 md:p-3 bg-orange-50 rounded-xl md:rounded-2xl text-orange-500 mb-0.5 md:mb-1 group-hover:scale-110 transition-transform">
+                        <Flame className="w-5 h-5 md:w-6 md:h-6 fill-orange-500/20" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             Daily Fuel <span className="text-orange-300">({includeSnacks ? '4' : '3'} Meals)</span>
                         </p>
-                        <p className="text-2xl font-black text-dark tracking-tight">{currentMonthData.targetCalories} <span className="text-xs text-slate-400 font-medium">kcal</span></p>
+                        <p className="text-xl md:text-2xl font-black text-dark tracking-tight">{currentMonthData.targetCalories} <span className="text-[10px] md:text-xs text-slate-400 font-medium">kcal</span></p>
                     </div>
                 </div>
 
                 {/* Interactive Water Tracker */}
                 <button
                     onClick={toggleWater}
-                    className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-2 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
+                    className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-1.5 md:gap-2 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
                 >
                     <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                     {/* Progress BG */}
@@ -344,58 +344,57 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                         style={{ height: `${(waterConsumed / plan.userStats.waterTargetLitres) * 100}%` }}
                     />
 
-                    <div className="p-3 bg-blue-100 rounded-2xl text-blue-500 mb-1 z-10">
-                        <Droplets className="w-6 h-6 fill-blue-500/20" />
+                    <div className="p-2 md:p-3 bg-blue-50 rounded-xl md:rounded-2xl text-blue-500 mb-0.5 md:mb-1 z-10">
+                        <Droplets className="w-5 h-5 md:w-6 md:h-6 fill-blue-500/20" />
                     </div>
                     <div className="z-10">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hydration</p>
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hydration</p>
                         {plan.userStats.unit === 'imperial' ? (
-                            <p className="text-2xl font-black text-dark tracking-tight">
-                                {Math.round(waterConsumed * 33.814)} <span className="text-slate-300">/</span> {Math.round(plan.userStats.waterTargetLitres * 33.814)} <span className="text-xs text-slate-400 font-medium">oz</span>
+                            <p className="text-xl md:text-2xl font-black text-dark tracking-tight">
+                                {Math.round(waterConsumed * 33.814)} <span className="text-slate-300">/</span> {Math.round(plan.userStats.waterTargetLitres * 33.814)} <span className="text-[10px] md:text-xs text-slate-400 font-medium">oz</span>
                             </p>
                         ) : (
-                            <p className="text-2xl font-black text-dark tracking-tight">
-                                {waterConsumed.toFixed(1)} <span className="text-slate-300">/</span> {plan.userStats.waterTargetLitres} <span className="text-xs text-slate-400 font-medium">L</span>
+                            <p className="text-xl md:text-2xl font-black text-dark tracking-tight">
+                                {waterConsumed.toFixed(1)} <span className="text-slate-300">/</span> {plan.userStats.waterTargetLitres} <span className="text-[10px] md:text-xs text-slate-400 font-medium">L</span>
                             </p>
                         )}
                     </div>
                 </button>
 
                 {/* BMR */}
-                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-2 relative overflow-hidden">
+                <div className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-1.5 md:gap-2 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-emerald-400"></div>
-                    <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-500 mb-1">
-                        <Activity className="w-6 h-6" />
+                    <div className="p-2 md:p-3 bg-emerald-50 rounded-xl md:rounded-2xl text-emerald-500 mb-0.5 md:mb-1">
+                        <Activity className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Burn</p>
-                        <p className="text-2xl font-black text-dark tracking-tight">{Math.round(plan.userStats.bmr)}</p>
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Burn</p>
+                        <p className="text-xl md:text-2xl font-black text-dark tracking-tight">{Math.round(plan.userStats.bmr)}</p>
                     </div>
                 </div>
 
                 {/* BMI */}
-                <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-2 relative overflow-hidden">
+                <div className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center gap-1.5 md:gap-2 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
-                    <div className="p-3 bg-purple-50 rounded-2xl text-purple-500 mb-1">
-                        <Activity className="w-6 h-6" />
+                    <div className="p-2 md:p-3 bg-purple-50 rounded-xl md:rounded-2xl text-purple-500 mb-0.5 md:mb-1">
+                        <Activity className="w-5 h-5 md:w-6 md:h-6" />
                     </div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">BMI</p>
-                        <p className="text-2xl font-black text-dark tracking-tight">{plan.userStats.bmi}</p>
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">BMI</p>
+                        <p className="text-xl md:text-2xl font-black text-dark tracking-tight">{plan.userStats.bmi}</p>
                     </div>
                 </div>
             </div>
 
-            {/* ALERTS SECTION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 px-2 md:px-0">
 
                 {/* BUDGET STRATEGY */}
                 {plan.budgetStrategy && (
-                    <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded-xl flex items-start gap-3 shadow-sm">
-                        <Wallet className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
+                    <div className="bg-emerald-50 border-l-4 border-emerald-400 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                        <Wallet className="w-5 h-5 md:w-6 md:h-6 text-emerald-500 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-emerald-800 text-sm uppercase tracking-wider mb-1">Budget Strategy Applied</h4>
-                            <p className="text-sm text-emerald-700 leading-relaxed font-medium">
+                            <h4 className="font-bold text-emerald-800 text-[10px] md:text-sm uppercase tracking-wider mb-0.5 md:mb-1">Budget Strategy Applied</h4>
+                            <p className="text-xs md:text-sm text-emerald-700 leading-relaxed font-medium">
                                 {plan.budgetStrategy}
                             </p>
                         </div>
@@ -404,11 +403,11 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                 {/* CLIMATE ANALYSIS */}
                 {plan.climateAnalysis && (
-                    <div className="bg-sky-50 border-l-4 border-sky-400 p-4 rounded-xl flex items-start gap-3 shadow-sm">
-                        <CloudSun className="w-6 h-6 text-sky-500 shrink-0 mt-0.5" />
+                    <div className="bg-sky-50 border-l-4 border-sky-400 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                        <CloudSun className="w-5 h-5 md:w-6 md:h-6 text-sky-500 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-sky-800 text-sm uppercase tracking-wider mb-1">Regional Climate Analysis</h4>
-                            <p className="text-sm text-sky-700 leading-relaxed font-medium">
+                            <h4 className="font-bold text-sky-800 text-[10px] md:text-sm uppercase tracking-wider mb-0.5 md:mb-1">Regional Climate Analysis</h4>
+                            <p className="text-xs md:text-sm text-sky-700 leading-relaxed font-medium">
                                 {plan.climateAnalysis.advice}
                             </p>
                         </div>
@@ -417,11 +416,11 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                 {/* ELECTROLYTE WARNING (High Priority Safety) */}
                 {plan.userStats.needsElectrolytes && (
-                    <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
-                        <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="bg-amber-50 border-l-4 border-amber-400 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
+                        <AlertTriangle className="w-5 h-5 md:w-6 md:h-6 text-amber-500 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-amber-800">High Hydration Warning</h4>
-                            <p className="text-sm text-amber-700 leading-relaxed">
+                            <h4 className="font-bold text-amber-800 text-sm md:text-base">High Hydration Warning</h4>
+                            <p className="text-xs md:text-sm text-amber-700 leading-relaxed">
                                 Based on your activity and region, your water target is high ({plan.userStats.unit === 'imperial' ? `${Math.round(plan.userStats.waterTargetLitres * 33.814)} oz` : `${plan.userStats.waterTargetLitres}L`}).
                                 To prevent <strong>electrolyte imbalance</strong>, consider adding a pinch of sea salt or electrolytes to your water once a day.
                             </p>
@@ -431,11 +430,11 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                 {/* MEDICATION WARNING (Medical Priority) */}
                 {plan.medicationAnalysis && (
-                    <div className="bg-rose-50 border-l-4 border-rose-500 p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
-                        <Pill className="w-6 h-6 text-rose-500 shrink-0 mt-0.5" />
+                    <div className="bg-rose-50 border-l-4 border-rose-500 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
+                        <Pill className="w-5 h-5 md:w-6 md:h-6 text-rose-500 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-rose-800">Food-Drug Interaction Safety Check</h4>
-                            <p className="text-sm text-rose-700 leading-relaxed font-medium">
+                            <h4 className="font-bold text-rose-800 text-sm md:text-base">Food-Drug Interaction Safety Check</h4>
+                            <p className="text-xs md:text-sm text-rose-700 leading-relaxed font-medium">
                                 {plan.medicationAnalysis}
                             </p>
                         </div>
@@ -444,12 +443,12 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                 {/* METABOLIC TRANSPARENCY WIDGET (Remediation) */}
                 {plan.metabolicLog && plan.metabolicLog.length > 0 && (
-                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
-                        <Activity className="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" />
+                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
+                        <Activity className="w-5 h-5 md:w-6 md:h-6 text-indigo-500 shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-indigo-800">Metabolic Logic Engine</h4>
-                            <p className="text-xs text-indigo-600 mb-2 font-medium">Why are my calories/macros calculated this way?</p>
-                            <ul className="text-sm text-indigo-700 leading-relaxed font-medium space-y-1">
+                            <h4 className="font-bold text-indigo-800 text-sm md:text-base">Metabolic Logic Engine</h4>
+                            <p className="text-[10px] md:text-xs text-indigo-600 mb-1.5 md:mb-2 font-medium italic">Why are my calories/macros calculated this way?</p>
+                            <ul className="text-[11px] md:text-sm text-indigo-700 leading-relaxed font-medium space-y-1">
                                 {plan.metabolicLog.map((log, i) => (
                                     <li key={i} className="flex items-start gap-2">
                                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
@@ -463,20 +462,20 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
             </div>
 
             {/* 2. PHASE (MONTH) SELECTOR */}
-            <div className="bg-dark rounded-[2rem] p-2 flex flex-col md:flex-row gap-2 shadow-xl shadow-slate-200">
-                <div className="flex-1 grid grid-cols-3 gap-2">
+            <div className="bg-dark rounded-2xl md:rounded-[2rem] p-1.5 md:p-2 flex flex-col md:flex-row gap-2 shadow-xl shadow-slate-200 sticky top-2 z-30 mx-2 md:mx-0">
+                <div className="flex-1 grid grid-cols-3 gap-1.5 md:gap-2">
                     {(['month1', 'month2', 'month3'] as const).map((m, idx) => (
                         <button
                             key={m}
                             onClick={() => setMonth(m)}
-                            className={`py-4 px-2 rounded-3xl text-sm font-bold transition-all relative overflow-hidden ${activeMonthKey === m ? 'bg-primary text-white shadow-lg' : 'bg-transparent text-slate-400 hover:bg-slate-800'}`}
+                            className={`py-3 md:py-4 px-1 md:px-2 rounded-xl md:rounded-3xl text-[11px] md:text-sm font-bold transition-all relative overflow-hidden ${activeMonthKey === m ? 'bg-primary text-white shadow-lg' : 'bg-transparent text-slate-400 hover:bg-slate-800'}`}
                         >
-                            <span className="block text-[10px] opacity-70 uppercase tracking-widest mb-1">Month {idx + 1}</span>
+                            <span className="block text-[8px] md:text-[10px] opacity-70 uppercase tracking-widest mb-0.5 md:mb-1">Phase {idx + 1}</span>
                             {idx === 0 ? "Ignition" : idx === 1 ? "Momentum" : "Peak"}
                         </button>
                     ))}
                 </div>
-                <div className="bg-slate-800/50 rounded-[20px] px-6 py-3 flex items-center justify-between gap-4 text-white">
+                <div className="hidden md:flex bg-slate-800/50 rounded-[20px] px-6 py-3 items-center justify-between gap-4 text-white">
                     <div className="text-left">
                         <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Phase Focus</p>
                         <p className="font-bold text-sm md:text-lg text-secondary">{currentMonthData.phaseName}</p>
@@ -559,24 +558,24 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                                 return (
                                     <div
                                         key={day.day}
-                                        className={`bg-white rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm relative transition-all duration-300 ${isLocked ? 'blur-[2px] select-none opacity-80' : 'hover:shadow-xl hover:-translate-y-1 hover:border-primary/20'}`}
+                                        className={`bg-white rounded-2xl md:rounded-[2rem] overflow-hidden border border-slate-100 shadow-sm relative transition-all duration-300 ${isLocked ? 'blur-[2px] select-none opacity-80' : 'hover:shadow-xl hover:-translate-y-1 hover:border-primary/20'}`}
                                     >
                                         {/* Card Header */}
-                                        <div className={`p-5 flex justify-between items-center ${isLocked ? 'bg-slate-50' : 'bg-gradient-to-br from-slate-50 to-white'}`}>
-                                            <div className="flex items-center gap-3">
-                                                <span className={`flex items-center justify-center w-10 h-10 rounded-full font-black text-lg ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-primary text-white shadow-lg shadow-primary/30'}`}>
+                                        <div className={`p-3 md:p-5 flex justify-between items-center ${isLocked ? 'bg-slate-50' : 'bg-gradient-to-br from-slate-50 to-white'}`}>
+                                            <div className="flex items-center gap-2 md:gap-3">
+                                                <span className={`flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full font-black text-base md:text-lg ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-primary text-white shadow-lg shadow-primary/30'}`}>
                                                     {day.day}
                                                 </span>
-                                                <span className="font-bold text-slate-400 text-sm">Day</span>
+                                                <span className="font-bold text-slate-400 text-xs md:text-sm">Day</span>
                                             </div>
-                                            <div className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-white px-3 py-1.5 rounded-full border border-slate-100 shadow-sm">
+                                            <div className="flex items-center gap-1 text-[10px] md:text-xs font-bold text-slate-600 bg-white px-2 md:px-3 py-1 md:py-1.5 rounded-full border border-slate-100 shadow-sm">
                                                 <Flame className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
                                                 {day.dailyMacros.calories}
                                             </div>
                                         </div>
 
                                         {/* Card Body */}
-                                        <div className="p-5 space-y-6">
+                                        <div className="p-3 md:p-5 space-y-4 md:space-y-6">
                                             {!isLocked ? (
                                                 <>
                                                     <MealDetail meal={day.meals.breakfast} type="Breakfast" />

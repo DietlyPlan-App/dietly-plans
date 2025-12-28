@@ -203,14 +203,14 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-light font-sans text-dark selection:bg-primary selection:text-white relative">
       {/* Navbar */}
-      <nav className="p-4 md:p-6 flex justify-between items-center sticky top-0 bg-light/80 backdrop-blur-md z-40 border-b border-slate-200">
+      <nav className="p-3 md:p-6 flex justify-between items-center sticky top-0 bg-light/80 backdrop-blur-md z-40 border-b border-slate-200">
         <div
-          className="flex items-center gap-2 text-primary font-extrabold text-2xl tracking-tighter cursor-default"
+          className="flex items-center gap-2 text-primary font-extrabold text-xl md:text-2xl tracking-tighter cursor-default"
         >
-          <div className="bg-gradient-to-br from-primary to-emerald-400 text-white p-1.5 rounded-lg shadow-lg shadow-primary/30">
-            <Zap className="w-5 h-5 fill-white" />
+          <div className="bg-gradient-to-br from-primary to-emerald-400 text-white p-1 md:p-1.5 rounded-lg shadow-lg shadow-primary/30">
+            <Zap className="w-4 h-4 md:w-5 md:h-5 fill-white" />
           </div>
-          <span className="hidden md:inline bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-700">DietlyPlans</span>
+          <span className="hidden sm:inline bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-700">DietlyPlans</span>
         </div>
 
         {session ? (
@@ -244,10 +244,10 @@ const App: React.FC = () => {
         {/* WIZARD (ALWAYS RENDERED UNLESS DASHBOARD IS ACTIVE) */}
         {currentStep === 'wizard' && (
           <div className="animate-in fade-in zoom-in-95 duration-500">
-            <div className="text-center mb-10 space-y-3">
-              <h1 className="text-3xl md:text-5xl font-extrabold text-dark tracking-tight">
+            <div className="text-center mb-6 md:mb-10 space-y-2 md:space-y-3">
+              <h1 className="text-2xl md:text-5xl font-extrabold text-dark tracking-tight leading-tight">
                 {session ? "Welcome back." : "Build your plan."} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-600 block md:inline mt-1 md:mt-0">
                   {session ? "Let's build a new roadmap." : "Start your transformation freely."}
                 </span>
               </h1>
