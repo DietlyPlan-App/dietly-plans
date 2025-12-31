@@ -33,9 +33,14 @@ serve(async (req: Request) => {
             ["verify"]
         );
 
-        // Convert hex signature to Uint8Array
+        // Convert hex signature to Uint8Array (with null safety)
+        const hexPairs = signature.match(/.{1,2}/g);
+        if (!hexPairs) {
+            console.error("Invalid signature format - not valid hex");
+            return new Response("Invalid Signature Format", { status: 401 });
+        }
         const signatureBytes = new Uint8Array(
-            signature.match(/.{1,2}/g)!.map((byte: any) => parseInt(byte, 16))
+            hexPairs.map((byte: string) => parseInt(byte, 16))
         );
 
         const verified = await crypto.subtle.verify(
@@ -50,10 +55,10 @@ serve(async (req: Request) => {
             return new Response("Invalid Signature", { status: 401 });
         }
 
-
         // Parse the body
         const body = JSON.parse(rawBody);
-        console.log(`Dodo Event: ${body.type} | ID: ${body.data?.payment_id || 'N/A'}`);
+        const paymentId = body.data?.payment_id || body.payment_id || 'N/A';
+        console.log(`Dodo Event: ${body.type} | ID: ${paymentId}`);
 
         // 3. Process Payment Success
         // Dodo payload structure: { type: "payment.succeeded", data: { metadata: { ... }, ... } }
@@ -72,6 +77,22 @@ serve(async (req: Request) => {
                     Deno.env.get('SUPABASE_URL') ?? '',
                     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
                 );
+
+                // IDEMPOTENCY CHECK: Prevent duplicate processing
+                const { data: existingLog } = await supabaseAdmin
+                    .from('activity_logs')
+                    .select('id')
+                    .eq('action_type', 'payment_success')
+                    .like('metadata', `%${paymentId}%`)
+                    .maybeSingle();
+
+                if (existingLog) {
+                    console.log(`⚠️ Payment ${paymentId} already processed. Skipping duplicate.`);
+                    return new Response(JSON.stringify({ received: true, duplicate: true }), {
+                        headers: { "Content-Type": "application/json" },
+                        status: 200
+                    });
+                }
 
                 // Update Database - Idempotent
                 const { error } = await supabaseAdmin

@@ -1,29 +1,39 @@
-
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 declare const Deno: any;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+// SECURITY: Restrict CORS to allowed origins only
+const allowedOrigins = [
+  'https://dietly-plans.vercel.app',
+  'https://dietlyplans.com',
+  'https://www.dietlyplans.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const effectiveOrigin = (origin && allowedOrigins.includes(origin))
+    ? origin
+    : allowedOrigins[0];
+  return {
+    'Access-Control-Allow-Origin': effectiveOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+};
 
 // INTELLIGENT REGION MAPPING (HYBRID STRATEGY)
-// Return 'null' to let Dodo/Stripe detect country via IP Address.
-// Return a 'string' only when we MUST force a specific banking context.
 const getStrictCountryFromCurrency = (currency: string): string | null => {
   const map: Record<string, string> = {
-    'AED': 'AE', // United Arab Emirates
-    'SAR': 'SA', // Saudi Arabia (KSA)
-    // Note: For USA (USD), Europe (EUR/GBP), Australia (AUD), Canada (CAD),
-    // we return NULL. This allows the Payment Provider to automatically 
-    // detect the user's IP address and offer the best local methods 
-    // (e.g. iDEAL for Dutch IP, Afterpay for Australian IP).
+    'AED': 'AE', 'SAR': 'SA',
   };
   return map[currency] || null;
 };
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -33,6 +43,23 @@ serve(async (req) => {
 
     if (!userId) {
       throw new Error("User ID is required");
+    }
+
+    // 1. VALIDATE USER EXISTS IN DATABASE
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: userExists, error: dbError } = await supabaseAdmin
+      .from('plans')
+      .select('user_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (dbError || !userExists) {
+      console.error("Invalid Checkout Request: User not found", userId);
+      throw new Error("Invalid User ID. Please log in again.");
     }
 
     const DODO_API_KEY = Deno.env.get('DODO_API_KEY');
@@ -52,19 +79,22 @@ serve(async (req) => {
     }
 
     // AUTO-DETECT ENVIRONMENT
-    const isTestMode = DODO_API_KEY.startsWith('test_') || DODO_API_KEY.includes('.'); // Dodo Test keys often have a dot or start with test_
+    const isTestMode = DODO_API_KEY.includes('.test.') || DODO_API_KEY.startsWith('test_');
     const dodoBaseUrl = isTestMode
       ? 'https://test.dodopayments.com'
       : 'https://live.dodopayments.com';
 
     // Construct Customer Object
     const customerPayload: any = {};
-    if (userEmail) customerPayload.email = userEmail;
-    if (userName) customerPayload.name = userName;
 
-    if (Object.keys(customerPayload).length === 0) {
-      customerPayload.email = "guest@dietlyplans.com";
+    // SECURITY FIX: Require real email or valid user email from inputs
+    if (userEmail) {
+      customerPayload.email = userEmail;
+    } else {
+      throw new Error("User email is required for receipt generation.");
     }
+
+    if (userName) customerPayload.name = userName;
 
     const strictCountry = currency ? getStrictCountryFromCurrency(currency) : null;
 

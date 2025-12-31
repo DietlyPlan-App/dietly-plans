@@ -196,11 +196,19 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     const [showPdfConfirm, setShowPdfConfirm] = useState(false);
 
     // COUNTDOWN TIMER
-    const [timeLeft, setTimeLeft] = useState(14 * 60 * 60); // 14 hours in seconds
+    const [timeLeft, setTimeLeft] = useState(() => {
+        const saved = localStorage.getItem('intro_timer');
+        if (saved) {
+            const diff = Math.floor((Date.now() - parseInt(saved)) / 1000);
+            return Math.max(0, (14 * 60 * 60) - diff);
+        }
+        localStorage.setItem('intro_timer', Date.now().toString());
+        return 14 * 60 * 60;
+    });
 
     useEffect(() => {
         const timer = setInterval(() => {
-            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 14 * 60 * 60));
+            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
         return () => clearInterval(timer);
     }, []);
@@ -217,7 +225,17 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
         if (userId) {
             setIsCheckoutLoading(tier);
             try {
-                trackEvent(userId, `checkout_initiated_dodo_${tier}`);
+                // Determine if we are in production
+                const isProduction = window.location.hostname !== 'localhost';
+                if (isProduction && (window as any).gtag) {
+                    // Safe execution of analytics
+                    (window as any).gtag('event', 'begin_checkout', {
+                        currency: plan.userStats.currency,
+                        value: tier === '1month' ? 9.99 : 19.99,
+                        items: [{ item_id: tier, item_name: `${tier} plan` }]
+                    });
+                }
+
                 const checkoutUrl = await getCheckoutUrl(
                     userId,
                     userEmail,
@@ -225,10 +243,15 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                     plan.userStats.currency,
                     tier
                 );
+
+                // UX: Clear loading state after 5 seconds if redirect doesn't happen instantly
+                // or if user clicks back button
+                setTimeout(() => setIsCheckoutLoading(null), 5000); // Failsafe
+
                 window.location.href = checkoutUrl;
             } catch (e) {
-                console.error(e);
-                alert("Checkout Error. Please try again.");
+                console.error("Checkout Trigger Failed", e);
+                alert("Could not initiate checkout. Please check your connection.");
                 setIsCheckoutLoading(null);
             }
         } else {
