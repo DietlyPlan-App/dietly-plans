@@ -22,7 +22,7 @@ const getCorsHeaders = (origin: string | null) => {
   };
 };
 
-// INTELLIGENT REGION MAPPING (HYBRID STRATEGY)
+// INTELLIGENT REGION MAPPING
 const getStrictCountryFromCurrency = (currency: string): string | null => {
   const map: Record<string, string> = {
     'AED': 'AE', 'SAR': 'SA',
@@ -45,6 +45,8 @@ serve(async (req) => {
       throw new Error("User ID is required");
     }
 
+    console.log("Processing checkout for userId:", userId);
+
     // 1. VALIDATE USER EXISTS IN DATABASE
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -57,9 +59,14 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single();
 
-    if (dbError || !userExists) {
-      console.error("Invalid Checkout Request: User not found", userId);
-      throw new Error("Invalid User ID. Please log in again.");
+    if (dbError) {
+      console.error("Database Verification Failed:", JSON.stringify(dbError));
+      throw new Error(`Profile verify failed: ${dbError.message || dbError.code}`);
+    }
+
+    if (!userExists) {
+      console.error("User not found in plans table:", userId);
+      throw new Error("No diet plan found for this user. Please generate one first.");
     }
 
     const DODO_API_KEY = Deno.env.get('DODO_API_KEY');
@@ -86,8 +93,6 @@ serve(async (req) => {
 
     // Construct Customer Object
     const customerPayload: any = {};
-
-    // SECURITY FIX: Require real email or valid user email from inputs
     if (userEmail) {
       customerPayload.email = userEmail;
     } else {
@@ -119,8 +124,8 @@ serve(async (req) => {
       requestBody.billing_country_code = strictCountry;
     }
 
-    // Using Checkout Sessions API (2025 Standard)
-    const response = await fetch(`${dodoBaseUrl}/checkout-sessions`, {
+    // Using Checkout API (Updated Endpoint)
+    const response = await fetch(`${dodoBaseUrl}/checkouts`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${DODO_API_KEY}`,
@@ -129,13 +134,22 @@ serve(async (req) => {
       body: JSON.stringify(requestBody)
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Dodo API Error:", JSON.stringify(data));
-      throw new Error(data.message || "Failed to create checkout session");
+    // ROBUST ERROR HANDLING: Dodo might return HTML (404/500) or Empty body
+    const rawBody = await response.text();
+    let data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch (e) {
+      console.error(`Dodo Raw Response (${response.status} ${response.statusText}):`, rawBody);
+      throw new Error(`Dodo API Error (${response.status} ${response.statusText}): ${rawBody.substring(0, 500)}`);
     }
 
+    if (!response.ok) {
+      console.error(`Dodo API Error (${response.status} ${response.statusText}):`, JSON.stringify(data));
+      throw new Error(data.message || `Failed to create checkout (Status: ${response.status})`);
+    }
+
+    // Handle variable response fields (payment_link, url, checkout_url)
     const paymentUrl = data.payment_link || data.url || data.checkout_url;
 
     if (!paymentUrl) {
