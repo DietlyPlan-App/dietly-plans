@@ -518,6 +518,12 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     // ROUND 8: ANTIBIOTIC + PROBIOTIC
     const isAntibiotic = /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i.test(combinedHealthText);
 
+    // ROUND 11: CHEMICAL DRUG INTERACTIONS (FINAL AUDIT)
+    const isWarfarin = /warfarin|coumadin|jantoven|blood thinner/i.test(combinedHealthText);
+    const isMAOI = /maoi|nardil|parnate|marplan|selegiline/i.test(combinedHealthText);
+    const isGrapefruitSensitive = /statin|lipitor|zocor|simvastatin|atorvastatin|transplant|cyclosporine|nifedipine/i.test(combinedHealthText);
+    const isBisphosphonate = /fosamax|alendronate|boniva/i.test(combinedHealthText); // Needs separation from Calcium
+
     // REMEDIATION: ADVANCED DRUG DETECTION
     const isDiabetic = /diabetes|metformin|insulin|glipizide|jardiance/i.test(combinedHealthText);
     const isGLP1 = /ozempic|wegovy|mounjaro|semaglutide|saxenda/i.test(combinedHealthText);
@@ -735,6 +741,20 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
         if (isG6PD) {
             safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
+        }
+
+        // ROUND 11: DRUG INTERACTION PROTOCOLS (CHEMICAL SAFETY)
+        if (isWarfarin) {
+            safetyDirectives += "DRUG INTERACTION (WARFARIN): CRITICAL VITAMIN K CONSISTENCY. DO NOT SPIKE VITAMIN K. PLAN CONSISTENT PORTIONS OF GREENS (Spinach, Kale, Broccoli). AVOID SUDDEN CHANGES. NO CRANBERRY JUICE. ";
+        }
+        if (isMAOI) {
+            safetyDirectives += "DRUG INTERACTION (MAOI): HYPERTENSIVE CRISIS RISK. LOW TYRAMINE DIET REQUIRED. NO AGED CHEESE, CURED MEATS, FERMENTED SOY, PICKLES, SAUERKRAUT, TAP BEER. ";
+        }
+        if (isGrapefruitSensitive) {
+            safetyDirectives += "DRUG INTERACTION (CYP3A4): LIVER TOXICITY RISK. NO GRAPEFRUIT OR SEVILLE ORANGES. ";
+        }
+        if (isBisphosphonate) {
+            safetyDirectives += "DRUG INTERACTION: BISPHOSPHONATE. DO NOT TAKE WITH CALCIUM/DAIRY. Separate by 2 hours. ";
         }
 
         return `
