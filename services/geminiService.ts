@@ -94,7 +94,7 @@ const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overri
     // --- BIOAVAILABILITY CORRECTION (PDCAAS) ---
     // Plant protein is ~10-20% less bioavailable. Vegans need MORE protein to match animal amino acid profile.
     if (stats.dietType === 'Vegan' || stats.dietType === 'Vegetarian') {
-        const pBoost = pSplit * 0.10; // +10% relative increase
+        const pBoost = pSplit * 0.15; // +15% relative increase (PDCAAS Correction)
         pSplit += pBoost;
         // Balance the equation: Remove from Carbs/Fats
         fSplit -= (pBoost / 2);
@@ -682,11 +682,30 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // 4. WINTER VITAMIN D (Climate Logic)
         // If climate is "Cold" or "Winter", suggest Vitamin D.
         if (batch1Schema.properties.climateAnalysis) {
-            // (We don't have the AI's climate analysis yet, but we can infer from Region/Date if we had it. 
+            // (We don't have the AI's climate analysis yet, but we can infer from Region/Date if we had it.
             // For now, we add a general advisory if Region suggests high latitude or user mentions 'Winter').
             if (stats.region.match(/UK|Canada|Sweden|Norway|Finland|Russia|Alaska/i) || stats.region.match(/Winter|Cold/i)) {
                 safetyDirectives += "CLIMATE HEALTH: HIGH LATITUDE/WINTER REGION DETECTED. LOW SUNLIGHT. ADVISE VITAMIN D RICH FOODS (Fatty Fish, Egg Yolks, Fortified Mushrooms). ";
             }
+        }
+
+        // --- ROUND 14: TOXICOLOGY & BIOCHEMISTRY (FINAL) ---
+
+        // 1. PREGNANCY/DIABETES & ALCOHOL
+        if (stats.isPregnant) {
+            safetyDirectives += "PREGNANCY TOXICOLOGY: NO ALCOHOL. NO RAW MEAT/SUSHI. LIMIT CAFFEINE < 200mg. ";
+        } else if (isDiabetic) {
+            safetyDirectives += "DIABETES SAFETY: ALCOHOL CAUSES HYPOGLYCEMIA. IF ALCOHOL IS CONSUMED, IT MUST BE WITH FOOD. NEVER ON EMPTY STOMACH. ";
+        }
+
+        // 2. HYPERTENSION & LICORICE
+        if (isHypertension) {
+            safetyDirectives += "HYPertension TOXICOLOGY: NO LIQUORICE ROOT (GLYCYRRHIZIN). IT RAISES BLOOD PRESSURE. ";
+        }
+
+        // 3. SSRI/MEDS & ST JOHN'S WORT
+        if (combinedHealthText.match(/depression|anxiety|ssri|zoloft|lexapro|prozac|paxil|celexa/i)) {
+            safetyDirectives += "DRUG INTERACTION: SEROTONIN SYNDROME RISK. NO ST JOHN'S WORT SUPPLEMENTS OR TEAS. ";
         }
 
         // 5. BARIATRIC (ROUND 9 + 10)
