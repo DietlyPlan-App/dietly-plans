@@ -502,6 +502,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const isRenal = /kidney|renal|ckd|dialysis/i.test(combinedHealthText);
     const isGeriatric = stats.age > 65;
     const isGout = /gout|uric|hyperuricemia/i.test(combinedHealthText);
+    const isHypertension = /pressure|hypertension|dash|blood pressure/i.test(combinedHealthText);
 
     // ROUND 8 FIX: Apply Renal Water Cap AFTER detection
 
@@ -510,6 +511,9 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const isBariatric = /sleeve|gastric|bypass|bariatric/i.test(combinedHealthText);
     const isKidneyStones = /stone|oxalate/i.test(combinedHealthText);
     const isThyroid = /thyroid|hypothyroid|hashimoto/i.test(combinedHealthText);
+    const isCeliac = /celiac|gluten|wheat/i.test(combinedHealthText);
+    const isPKU = /pku|phenylketonuria|phenylalanine/i.test(combinedHealthText);
+    const isG6PD = /g6pd|favism/i.test(combinedHealthText);
 
     // ROUND 8: ANTIBIOTIC + PROBIOTIC
     const isAntibiotic = /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i.test(combinedHealthText);
@@ -717,6 +721,20 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // SHIFT WORK CIRCADIAN SAFETY
         if (/shift|night|graveyard|rotation/i.test(stats.medications + " " + stats.allergies)) {
             safetyDirectives += "CIRCADIAN RHYTHM DISRUPTION DETECTED (SHIFT WORK): TIMING IS CRITICAL. Focus on High Protein/Fat before shift start. LOW CARB at end of shift (to prevent insulin spike before sleep). ";
+        }
+
+        // ROUND 10: RARE GENETIC/MEDICAL FAILSAFE (THE "100%" INTEGRITY CHECK)
+        if (isHypertension) {
+            safetyDirectives += "HYPERTENSION PROTOCOL (DASH): RESTRICT SODIUM < 2300mg/day. INCREASE POTASSIUM (Leafy Greens, Bananas, Yogurt) unless Renal. AVOID PROCESSED MEATS/CANNED SOUP. ";
+        }
+        if (isCeliac) {
+            safetyDirectives += "AUTOIMMUNE SAFETY: CELIAC DISEASE DETECTED. STRICT GLUTEN-FREE REQUIRED. NO WHEAT, BARLEY, RYE, MALT. WARN CROSS-CONTAMINATION. ";
+        }
+        if (isPKU) {
+            safetyDirectives += "METABOLIC DEFECT: PKU (PHENYLKETONURIA). DANGER: STRICTLY LIMIT PROTEIN AND PHENYLALANINE. NO MEAT, FISH, EGGS, NUTS, DAIRY, SOY, ASPARTAME. PRIORITIZE MEDIAL FRUITS/VEG. ";
+        }
+        if (isG6PD) {
+            safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
         }
 
         return `
