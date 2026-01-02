@@ -796,6 +796,21 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             safetyDirectives += "PHYSICS CHECK: BATCH COOKING MODE. DO NOT SUGGEST SALADS OR CRISPY FOODS (They get soggy). Use Stews/Curries/Roasts. ";
         }
 
+        // METFORMIN (B12 DEPLETION)
+        if (combinedHealthText.includes('metformin')) {
+            safetyDirectives += "DRUG INTERACTION: METFORMIN USAGE. RISK OF B12 DEFICIENCY. ENSURE B12 RICH FOODS (Eggs, Meat, Nutritional Yeast) ARE INCLUDED DAILY. ";
+        }
+
+        // STEROIDS / PREDNISONE
+        if (combinedHealthText.match(/prednisone|steroid|corticosteroid/i)) {
+            safetyDirectives += "DRUG INTERACTION: STEROID USE. HIGH RISK OF FLUID RETENTION & SUGAR SPIKES. STRICT LOW SODIUM (<2000mg) AND LOW SUGAR. INCREASES APPETITE: USE HIGH VOLUME VEGETABLES. ";
+        }
+
+        // RENAL + MUSCLE GAIN CONFLICT EXPLANATION
+        if (isRenal && stats.goal === 'gain') {
+            safetyDirectives += "MEDICAL CONFLICT: USER WANTS TO BUILD MUSCLE BUT HAS KIDNEY DISEASE. SAFETY PRIORITY: KIDNEYS. PROTEIN IS CAPPED. EXPLAIN TO USER: 'Protein limited to preserve renal function'. ";
+        }
+
         // LITHIUM SAFETY
         if (isLithium) {
             safetyDirectives += "DRUG INTERACTION: LITHIUM DETECTED. DO NOT RESTRICT SODIUM. KEEP SALT INTAKE CONSISTENT / NORMAL. ";
