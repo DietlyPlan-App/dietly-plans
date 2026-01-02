@@ -52,8 +52,8 @@ serve(async (req: Request) => {
         );
 
         if (!verified) {
-            console.error("WARNING: Invalid Signature detected. Proceeding for debug purposes.");
-            // return new Response("Invalid Signature", { status: 401 }); // DISABLED FOR DEBUGGING
+            console.error("CRITICAL: Invalid Signature detected. BLOCKING REQUEST.");
+            return new Response("Invalid Signature", { status: 401 }); // DISABLED FOR DEBUGGING -> NOW ENABLED
         }
 
         // Parse the body

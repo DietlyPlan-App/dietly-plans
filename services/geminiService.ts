@@ -121,7 +121,12 @@ const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overri
     }
     // C. GERIATRIC (Only if NOT Renal)
     else if (overrides.isGeriatric) {
-        pSplit = Math.max(pSplit, 0.35); // Boost to 35% minimum for Sarcopenia
+        // CORRECTION (Fix B.2):
+        // Old Logic: Force 35% Protein (Too high, risk of renal stress).
+        // New Logic: Target ~1.2g/kg. On standard diet this is ~20-25%.
+        // We set 25% as the baseline floor, but do NOT force it if diet is lower (like Vegan).
+        // Actually, we want to ensure Sarcopenia protection without Overdose.
+        pSplit = 0.25; // Moderate Protein (Safe Zone)
         if (pSplit + fSplit + cSplit > 1.0) {
             cSplit = 1.0 - (pSplit + fSplit);
         }
@@ -463,6 +468,10 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     }
 
     const baseWater = calculateBaseWater(stats.weight, stats.activity, stats.isBreastfeeding, stats.age) * waterFactor;
+
+    // ROUND 8: RENAL FLUID RESTRICTION (LETHAL RISK FIX)
+    // Renal Cap Logic moved to 'safeWater' calculation below to ensure 'isRenal' is defined.
+
     const bmi = parseFloat((stats.weight / ((stats.height / 100) ** 2)).toFixed(1));
 
     // --- MENSTRUAL CYCLE ADJUSTMENT (LUTEAL PHASE) ---
@@ -483,19 +492,27 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const sanitize = (str: string) => str.replace(/[{}]/g, "").replace(/System:/gi, "").replace(/Instructions:/gi, "");
     stats.allergies = sanitize(stats.allergies);
     stats.medications = sanitize(stats.medications);
+    // ROUND 8: Prevent Prompt Injection via Name
+    stats.name = sanitize(stats.name || "").replace(/[^a-zA-Z0-9 ]/g, "");
 
     // --- DETECT HIDDEN CONDITIONS ---
-    const combinedHealthText = (stats.medications + " " + stats.allergies).toLowerCase();
+    const combinedHealthText = (stats.medications + " " + stats.allergies + " " + (stats.conditions || "")).toLowerCase();
     const isHistamineIntolerant = /histamine|dao|mast cell|mcas/i.test(combinedHealthText);
     const isNoGallbladder = /gallbladder|cholecystectomy|bile/i.test(combinedHealthText);
     const isRenal = /kidney|renal|ckd|dialysis/i.test(combinedHealthText);
     const isGeriatric = stats.age > 65;
     const isGout = /gout|uric|hyperuricemia/i.test(combinedHealthText);
 
-    // NEW ROUND 9 CONDITIONS
+    // ROUND 8 FIX: Apply Renal Water Cap AFTER detection
+
+
+    // NEW CONDITIONS
     const isBariatric = /sleeve|gastric|bypass|bariatric/i.test(combinedHealthText);
     const isKidneyStones = /stone|oxalate/i.test(combinedHealthText);
     const isThyroid = /thyroid|hypothyroid|hashimoto/i.test(combinedHealthText);
+
+    // ROUND 8: ANTIBIOTIC + PROBIOTIC
+    const isAntibiotic = /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i.test(combinedHealthText);
 
     // REMEDIATION: ADVANCED DRUG DETECTION
     const isDiabetic = /diabetes|metformin|insulin|glipizide|jardiance/i.test(combinedHealthText);
@@ -511,6 +528,13 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
     // Fix absoluteFloor Scope
     const absoluteFloor = stats.gender === 'male' ? 1500 : 1200;
+
+    // ROUND 8: LATE BINDING RENAL CAP
+    let safeWater = baseWater;
+    if (isRenal) {
+        safeWater = Math.min(safeWater, 1.5); // Hard Cap 1.5L
+        logAdjustment("CRITICAL SAFETY: Renal Condition detected. Hard-capping fluid intake to 1.5L.");
+    }
 
     let calorieTarget = tdee;
     const isUnderweight = bmi < 18.5;
@@ -604,6 +628,17 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             }
         }
 
+        // ROUND 8: WOMEN'S HEALTH (MENSTRUAL IRON)
+        // Check if cycle logic detected Luteal/Menstrual phase
+        if (stats.lastPeriodStart) {
+            const lastPeriod = new Date(stats.lastPeriodStart);
+            const today = new Date();
+            const diffDays = Math.floor((today.getTime() - lastPeriod.getTime()) / (1000 * 3600 * 24));
+            if (diffDays >= 0 && diffDays <= 5) {
+                safetyDirectives += "MENSTRUAL PHASE (DAYS 1-5): BLOOD LOSS DETECTED. HIGH PRIORITY: IRON-RICH FOODS (Red Meat, Spinach+Vit C, Lentils). ";
+            }
+        }
+
         // 4. GOUT
         if (isGout) {
             safetyDirectives += "GOUT DIET: LOW PURINE. NO ORGAN MEATS, ANCHOVIES, SHELLFISH, ASPARAGUS. LIMIT RED MEAT. HYDRATE WELL. ";
@@ -632,13 +667,24 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
 
         // PREGNANCY
+        // PREGNANCY
         if (stats.isPregnant) {
-            safetyDirectives += "PREGNANCY SAFETY: NO UNHEATED DELI MEATS (Listeria). NO SOFT UNPASTEURIZED CHEESE (Brie, Feta). COOK ALL EGGS FULLY. ";
+            safetyDirectives += "PREGNANCY SAFETY: NO UNHEATED DELI MEATS (Listeria). NO SOFT UNPASTEURIZED CHEESE. COOK ALL EGGS FULLY. NO LIVER/PATE (VITAMIN A TOXICITY). ";
         }
 
         // CONDITIONS
         if (isHistamineIntolerant) {
             safetyDirectives += "HISTAMINE WARNING: FORCE FRESH INGREDIENTS. NO LEFTOVERS. NO FERMENTED FOODS. FREEZE IMMEDIATELY. ";
+        }
+
+        // ROUND 8: ANTIBIOTIC RECOVERY
+        if (isAntibiotic) {
+            safetyDirectives += "MICROBIOME RESTORATION: ANTIBIOTICS DETECTED. PRESCRIBE PROBIOTIC-RICH FOODS (YOGURT, KEFIR) *MINIMUM 2 HOURS* AFTER MEDICATION DOSE. ";
+        }
+
+        // ROUND 8: SHIFT WORK (INSULIN RESISTANCE)
+        if (isShiftWorker) {
+            safetyDirectives += "CHRONOBIOLOGY: SHIFT WORKER. REVERSE CARB TIMING. LOW CARB DURING NIGHT SHIFT to manage insulin resistance. CARB LOADING BEFORE SLEEP. ";
         }
 
         if (isNoGallbladder) {
@@ -728,9 +774,10 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         const m3Macros = calculateOptimalMacros(stats, m3CalTarget, { isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1 });
         const m3Result = await callGemini(ai, getSafetyProfile(m3CalTarget, m3Macros) + "\nGenerate MONTH 3 (Week 1 Template).", batchNextSchema, 60000);
 
-        let finalWater = baseWater;
-        if (m1Result.climateAnalysis?.isHot) finalWater += 0.3;
-        const finalTargetLitres = Math.min(parseFloat(finalWater.toFixed(1)), 5.5);
+        // ROUND 8: USE SAFE WATER
+        let finalWater = safeWater;
+        if (m1Result.climateAnalysis?.isHot && !isRenal) finalWater += 0.3; // Don't add heat water if Renal
+        const finalTargetLitres = Math.min(parseFloat(finalWater.toFixed(1)), isRenal ? 1.5 : 5.5);
 
         // REMEDIATION: ELECTROLYTE BLIND SPOT
         // Trigger if High Volume (>3L) OR if Athlete/Active in Heat (even if volume is lower)

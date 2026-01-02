@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserStats, Gender, Goal, ActivityLevel } from '../types';
 import { ArrowRight, Check, Ruler, Weight, User, Globe, Mail, ShieldAlert, Stethoscope, MapPin, ChefHat, Clock, Repeat, Info, Briefcase, Sun, ChevronDown, Coffee, Baby, Milk } from 'lucide-react';
+import { safeLocalStorage } from '../src/utils/storageUtils';
 
 interface WizardProps {
   onComplete: (stats: UserStats) => void;
@@ -59,33 +60,72 @@ const Tooltip = ({ text }: { text: string }) => (
 const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
   // 1. LAZY INITIALIZATION from LocalStorage
   const [step, setStep] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dietly_wizard_step');
-      return saved ? parseInt(saved) : 1;
-    }
-    return 1;
+    const saved = safeLocalStorage.getItem('dietly_wizard_step');
+    return saved ? parseInt(saved) : 1;
   });
 
   // INTERNAL LOCK to prevent double-firing before Parent updates 'loading' prop
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Conflict Warning State (ROUND 8 FIX)
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictMessage, setConflictMessage] = useState({ title: "", description: "" });
+
   const [formData, setFormData] = useState<UserStats>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dietly_wizard_data');
-      return saved ? JSON.parse(saved) : DEFAULT_STATS;
-    }
-    return DEFAULT_STATS;
+    const saved = safeLocalStorage.getItem('dietly_wizard_data');
+    return saved ? JSON.parse(saved) : DEFAULT_STATS;
   });
 
   // 2. PERSISTENCE EFFECT
   useEffect(() => {
-    localStorage.setItem('dietly_wizard_data', JSON.stringify(formData));
-    localStorage.setItem('dietly_wizard_step', step.toString());
+    safeLocalStorage.setItem('dietly_wizard_data', JSON.stringify(formData));
+    safeLocalStorage.setItem('dietly_wizard_step', step.toString());
   }, [formData, step]);
 
   const handleNext = () => {
     // Basic Haptic Feedback
     if (navigator.vibrate) navigator.vibrate(50);
+
+    // --- INPUT VALIDATION (ROUND 8) ---
+    if (step === 1) {
+      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age (12-120).");
+      if (!formData.gender) return alert("Please select a gender.");
+    }
+    if (step === 2) {
+      if (!formData.height || formData.height < 50 || formData.height > 300) return alert("Please enter a valid height.");
+      if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
+      if (!formData.region) return alert("Please enter your City/Region.");
+    }
+
+    // --- CONFLICT LOGIC CHECK (Before Step 6) ---
+    if (step === 5) { // Just before Final Step
+      const conditions = (formData.medications || "").toLowerCase() + " " + (formData.allergies || "").toLowerCase();
+      const diet = (formData.dietType || "").toLowerCase();
+      const isKeto = diet.includes('keto');
+      const isNoGallbladder = conditions.includes('gallbladder') || conditions.includes('cholecystectomy');
+      const isRenal = conditions.includes('renal') || conditions.includes('kidney') || conditions.includes('ckd');
+
+      // CONFLICT 1: KETO + NO GALLBLADDER
+      if (isKeto && isNoGallbladder) {
+        setConflictMessage({
+          title: "⚠️ High Fat / Gallbladder Conflict",
+          description: "You selected 'Keto' (High Fat) but indicated 'No Gallbladder'. Without a gallbladder, digesting high amounts of fat can cause severe distress. We recommend switching to 'Balanced' or 'Low Carb'."
+        });
+        setShowConflictModal(true);
+        return; // HALT
+      }
+
+      // CONFLICT 2: KETO + RENAL
+      if (isKeto && isRenal) {
+        setConflictMessage({
+          title: "⚠️ High Protein / Renal Conflict",
+          description: "Keto diets are often higher in protein/fats. For Renal health, protein intake must be strictly controlled. We recommend 'Balanced' or 'Vegetarian' to protect kidney function."
+        });
+        setShowConflictModal(true);
+        return; // HALT
+      }
+    }
+
     setStep(prev => prev + 1);
   };
 
@@ -143,8 +183,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             <input
               type="number"
               inputMode="numeric"
-              value={formData.age}
-              onChange={(e) => updateField('age', parseInt(e.target.value))}
+              value={formData.age || ''}
+              onChange={(e) => updateField('age', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} // Sanitize to 0 if empty
               placeholder="e.g. 30"
               className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
             />
@@ -158,6 +198,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               onClick={() => updateField('isPregnant', !formData.isPregnant)}
               className={`w-full p-3.5 md:p-4 rounded-2xl border-2 flex items-center justify-between transition-all active:scale-[0.99] ${formData.isPregnant ? 'border-pink-400 bg-pink-50 text-pink-700 shadow-sm' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
             >
+
               <div className="flex items-center gap-3">
                 <div className={`p-1.5 rounded-lg ${formData.isPregnant ? 'bg-pink-100' : 'bg-slate-100'}`}>
                   <Baby className="w-5 h-5 text-pink-500" />
@@ -252,8 +293,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                 <input
                   type="number"
                   inputMode="decimal"
-                  value={formData.height}
-                  onChange={(e) => updateField('height', parseFloat(e.target.value))}
+                  value={formData.height || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    updateField('height', isNaN(val) ? 0 : val);
+                  }}
                   className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
                 />
               ) : (
@@ -300,11 +344,15 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               <input
                 type="number"
                 inputMode="decimal"
-                value={currentWeightDisplay}
+                value={currentWeightDisplay || ''}
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
-                  const kg = formData.unit === 'metric' ? val : val * 0.453592;
-                  updateField('weight', kg);
+                  if (isNaN(val)) {
+                    updateField('weight', 0); // Sanitize to 0
+                  } else {
+                    const kg = formData.unit === 'metric' ? val : val * 0.453592;
+                    updateField('weight', kg);
+                  }
                 }}
                 className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
               />
@@ -467,8 +515,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             <input
               type="number"
               inputMode="numeric"
-              value={formData.budgetAmount}
-              onChange={(e) => updateField('budgetAmount', parseFloat(e.target.value))}
+              value={formData.budgetAmount || ''}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                updateField('budgetAmount', isNaN(val) ? 0 : val);
+              }}
               className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
               placeholder="Amount"
             />
@@ -644,6 +695,29 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           {(!loading && !isSubmitting) && <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />}
         </button>
       </div>
+      {/* CONFLICT WARNING MODAL */}
+      {showConflictModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border-l-4 border-amber-500">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{conflictMessage.title}</h3>
+            <p className="text-slate-600 mb-6 text-sm leading-relaxed">{conflictMessage.description}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConflictModal(false)}
+                className="flex-1 py-3 px-4 bg-slate-100 font-bold text-slate-700 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Change Inputs
+              </button>
+              <button
+                onClick={() => { setShowConflictModal(false); setStep(step + 1); }}
+                className="flex-1 py-3 px-4 bg-amber-500 font-bold text-white rounded-xl hover:bg-amber-600 transition-colors"
+              >
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

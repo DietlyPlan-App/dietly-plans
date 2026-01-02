@@ -7,25 +7,21 @@ import { generateMealPlan } from './services/geminiService';
 import { supabase, trackEvent, saveHistory } from './services/supabaseClient'; // Import Client & Tracking
 import { UserStats, AIResponse } from './types';
 import { Zap, LogOut, X, CheckCircle } from 'lucide-react';
+import { safeLocalStorage } from './src/utils/storageUtils';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null); // Track User Session
   const [currentStep, setCurrentStep] = useState<'wizard' | 'loading' | 'dashboard'>(() => {
     // RESTORE STEP FROM LOCAL STORAGE
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('dietly_step') as any || 'wizard';
-    }
-    return 'wizard';
+    const saved = safeLocalStorage.getItem('dietly_step');
+    return (saved as any) || 'wizard';
   });
   const [loadingText, setLoadingText] = useState("Initializing AI...");
 
   // RESTORE PLAN FROM LOCAL STORAGE (Instant Load)
   const [plan, setPlan] = useState<AIResponse | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dietly_plan');
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
+    const saved = safeLocalStorage.getItem('dietly_plan');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [isPaid, setIsPaid] = useState(false);
@@ -85,11 +81,11 @@ const App: React.FC = () => {
   // PERSISTENCE EFFECT
   useEffect(() => {
     if (plan) {
-      localStorage.setItem('dietly_plan', JSON.stringify(plan));
+      safeLocalStorage.setItem('dietly_plan', JSON.stringify(plan));
     } else {
-      localStorage.removeItem('dietly_plan');
+      safeLocalStorage.removeItem('dietly_plan');
     }
-    localStorage.setItem('dietly_step', currentStep);
+    safeLocalStorage.setItem('dietly_step', currentStep);
   }, [plan, currentStep]);
 
   // 2. Fetch Plan from Supabase Database
@@ -153,8 +149,8 @@ const App: React.FC = () => {
       setCurrentStep('dashboard');
 
       // Clear the wizard state after successful generation to start fresh next time
-      localStorage.removeItem('dietly_wizard_data');
-      localStorage.removeItem('dietly_wizard_step');
+      safeLocalStorage.removeItem('dietly_wizard_data');
+      safeLocalStorage.removeItem('dietly_wizard_step');
 
       // A. Save to Active Plans (Upsert - Current State)
       const { error } = await supabase
@@ -194,8 +190,8 @@ const App: React.FC = () => {
     if (window.confirm("Start over? This will generate a new plan.")) {
       setCurrentStep('wizard');
       setPlan(null); // Clear state
-      localStorage.removeItem('dietly_plan'); // Clear storage
-      localStorage.removeItem('dietly_step');
+      safeLocalStorage.removeItem('dietly_plan'); // Clear storage
+      safeLocalStorage.removeItem('dietly_step');
       if (session) trackEvent(session.user.id, 'app_reset_clicked');
     }
   };

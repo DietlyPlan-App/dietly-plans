@@ -30,6 +30,8 @@ export interface UserStats {
   lastPeriodStart?: string; // Hormonal Cycle Tracking
   cookingSkill?: 'microwave' | 'beginner' | 'advanced' | 'chef'; // Rationality
   isThyroid?: boolean; // Medical Safety (Derived or Explicit)
+  conditions?: string; // ROUND 8: Added for robust condition parsing
+  isRenal?: boolean; // ROUND 8: Added for explicit renal tracking
 }
 
 export interface MacroSplit {

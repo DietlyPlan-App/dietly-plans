@@ -289,6 +289,18 @@ export const generatePDF = (plan: AIResponse) => {
                     return;
                 }
 
+                // CRITICAL SAFETY WARNING (FIX B.1)
+                if (meal.warning) {
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(220, 38, 38); // Red-600
+                    const warningText = `⚠️ SAFETY WARNING: ${meal.warning}`;
+                    const splitWarning = doc.splitTextToSize(warningText.toUpperCase(), contentWidth - 10);
+                    doc.text(splitWarning, margin + 5, y);
+                    y += (splitWarning.length * 5) + 4;
+                    doc.setTextColor(30, 41, 59); // Reset to Dark
+                }
+
                 // Meta
                 doc.setFontSize(9);
                 doc.setFont("helvetica", "bold");
