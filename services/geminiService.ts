@@ -654,6 +654,41 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             safetyDirectives += "GOUT DIET: LOW PURINE. NO ORGAN MEATS, ANCHOVIES, SHELLFISH, ASPARAGUS. LIMIT RED MEAT. HYDRATE WELL. ";
         }
 
+        if (isG6PD) {
+            safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
+        }
+
+        // --- ROUND 13: PARADOX RESOLUTION (CONSTRAINT COLLISIONS) ---
+
+        // 1. KETO + HYPERTENSION (The "Salt Paradox")
+        // Standard DASH = Low Sodium. Keto = Needs Electrolytes.
+        // Compromise: MODERATE Sodium (2500-3000mg) + WARNING.
+        if (stats.dietType.includes('Keto') && isHypertension) {
+            safetyDirectives += "MEDICAL CONFLICT (KETO + HYPERTENSION): STANDARD KETO REQUIRES HIGH SALT. HYPERTENSION REQUIRES LOW SALT. compromise: TARGET MODERATE SODIUM (2.5g). FOCUS ON POTASSIUM/MAGNESIUM FROM FOOD TO LOWER BP. MONITOR BP DAILY. ";
+        }
+
+        // 2. GOUT + KETO (The "Purine Paradox")
+        // Standard Keto = Red Meat. Gout = No Red Meat.
+        // Resolution: FORCE "POULTRY/FISH/EGG" KETO.
+        if (stats.dietType.includes('Keto') && isGout) {
+            safetyDirectives += "MEDICAL CONFLICT (GOUT + KETO): RED MEAT IS BANNED. YOU MUST GENERATE A 'POULTRY & FISH' KETO PLAN. RELY ON EGGS, SALMON, CHICKEN, OLIVE OIL, AVOCADO. NO BEEF/PORK. ";
+        }
+
+        // 3. PEDIATRIC SAFETY (The "Growth Paradox")
+        if (stats.age < 18 && (stats.dietType.includes('Keto') || stats.dietType.includes('Paleo'))) {
+            safetyDirectives += "PEDIATRIC SAFETY WARNING: USER IS UNDER 18. STRICT KETO/PALEO CAN STUNT GROWTH WITHOUT SUPERVISION. ENSURE CALCIUM & ADEQUATE PROTEIN. DO NOT ALLOW EXTREME CALORIC DEFICITS. ";
+        }
+
+        // 4. WINTER VITAMIN D (Climate Logic)
+        // If climate is "Cold" or "Winter", suggest Vitamin D.
+        if (batch1Schema.properties.climateAnalysis) {
+            // (We don't have the AI's climate analysis yet, but we can infer from Region/Date if we had it. 
+            // For now, we add a general advisory if Region suggests high latitude or user mentions 'Winter').
+            if (stats.region.match(/UK|Canada|Sweden|Norway|Finland|Russia|Alaska/i) || stats.region.match(/Winter|Cold/i)) {
+                safetyDirectives += "CLIMATE HEALTH: HIGH LATITUDE/WINTER REGION DETECTED. LOW SUNLIGHT. ADVISE VITAMIN D RICH FOODS (Fatty Fish, Egg Yolks, Fortified Mushrooms). ";
+            }
+        }
+
         // 5. BARIATRIC (ROUND 9 + 10)
         if (isBariatric) {
             safetyDirectives += "BARIATRIC SURGERY DETECTED: STRICT VOLUME LIMIT. MEALS MUST BE < 200g. HIGH PROTEIN DENSITY. NO LIQUIDS WITH MEALS (DUMPING SYNDROME RISK). ";
