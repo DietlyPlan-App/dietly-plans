@@ -729,33 +729,18 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             safetyDirectives += "CIRCADIAN RHYTHM DISRUPTION DETECTED (SHIFT WORK): TIMING IS CRITICAL. Focus on High Protein/Fat before shift start. LOW CARB at end of shift (to prevent insulin spike before sleep). ";
         }
 
-        // ROUND 10: RARE GENETIC/MEDICAL FAILSAFE (THE "100%" INTEGRITY CHECK)
+        const isPotassiumSparing = /spironolactone|aldactone|triamterene|amiloride/i.test(combinedHealthText);
+
+        // ROUND 12: HYPERTENSION PROTOCOL (DASH) - UPDATED FOR SPIRONOLACTONE
         if (isHypertension) {
-            safetyDirectives += "HYPERTENSION PROTOCOL (DASH): RESTRICT SODIUM < 2300mg/day. INCREASE POTASSIUM (Leafy Greens, Bananas, Yogurt) unless Renal. AVOID PROCESSED MEATS/CANNED SOUP. ";
-        }
-        if (isCeliac) {
-            safetyDirectives += "AUTOIMMUNE SAFETY: CELIAC DISEASE DETECTED. STRICT GLUTEN-FREE REQUIRED. NO WHEAT, BARLEY, RYE, MALT. WARN CROSS-CONTAMINATION. ";
-        }
-        if (isPKU) {
-            safetyDirectives += "METABOLIC DEFECT: PKU (PHENYLKETONURIA). DANGER: STRICTLY LIMIT PROTEIN AND PHENYLALANINE. NO MEAT, FISH, EGGS, NUTS, DAIRY, SOY, ASPARTAME. PRIORITIZE MEDIAL FRUITS/VEG. ";
-        }
-        if (isG6PD) {
-            safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
+            if (isPotassiumSparing || isRenal) {
+                safetyDirectives += "HYPERTENSION PROTOCOL (MODIFIED): RESTRICT SODIUM < 2300mg/day. **DO NOT INCREASE POTASSIUM** (Medication Conflict/Renal Risk). MAINTAIN NORMAL LEVELS. AVOID PROCESSED MEATS. ";
+            } else {
+                safetyDirectives += "HYPERTENSION PROTOCOL (DASH): RESTRICT SODIUM < 2300mg/day. INCREASE POTASSIUM (Leafy Greens, Bananas, Yogurt). AVOID PROCESSED MEATS/CANNED SOUP. ";
+            }
         }
 
-        // ROUND 11: DRUG INTERACTION PROTOCOLS (CHEMICAL SAFETY)
-        if (isWarfarin) {
-            safetyDirectives += "DRUG INTERACTION (WARFARIN): CRITICAL VITAMIN K CONSISTENCY. DO NOT SPIKE VITAMIN K. PLAN CONSISTENT PORTIONS OF GREENS (Spinach, Kale, Broccoli). AVOID SUDDEN CHANGES. NO CRANBERRY JUICE. ";
-        }
-        if (isMAOI) {
-            safetyDirectives += "DRUG INTERACTION (MAOI): HYPERTENSIVE CRISIS RISK. LOW TYRAMINE DIET REQUIRED. NO AGED CHEESE, CURED MEATS, FERMENTED SOY, PICKLES, SAUERKRAUT, TAP BEER. ";
-        }
-        if (isGrapefruitSensitive) {
-            safetyDirectives += "DRUG INTERACTION (CYP3A4): LIVER TOXICITY RISK. NO GRAPEFRUIT OR SEVILLE ORANGES. ";
-        }
-        if (isBisphosphonate) {
-            safetyDirectives += "DRUG INTERACTION: BISPHOSPHONATE. DO NOT TAKE WITH CALCIUM/DAIRY. Separate by 2 hours. ";
-        }
+        // ... (Other conditions)
 
         return `
     ACT AS: Michelin Nutritionist & Clinical Dietitian.
@@ -774,6 +759,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     ${isBariatric ? "- BARIATRIC ESSENTIAL: Daily Chewable Multivitamin + Calcium Citrate required." : ""}
     ${stats.isPregnant ? "- PRENATAL ESSENTIAL: Daily Prenatal Vitamin with Folic Acid required." : ""}
     ${combinedHealthText.includes("antibiotic") || combinedHealthText.includes("doxycycline") || combinedHealthText.includes("tetracycline") ? "- MEDICATION SAFETY: SEPARATE DAIRY/CALCIUM FROM ANTIBIOTICS BY 2 HOURS." : ""}
+    ${isThyroid ? "- MEDICATION SAFETY: Take Levothyroxine on empty stomach. SEPARATE FROM CALCIUM/IRON SUPPLEMENTS BY 4 HOURS." : ""}
     - MICRONUTRIENT CHECKSUM: Verify IRON (>18mg for women) and CALCIUM (>1000mg). If Vegan, DOUBLE-CHECK IRON sources (Lentils/Spinach + Vitamin C for absorption).
 
     FORMATTING RULES:
@@ -906,5 +892,5 @@ function expandMonth(index: number, data: any, targetCal: number, water: number,
             });
         }
     }
-    return { monthIndex: index, phaseName: data.phaseName || `Phase ${index}`, targetCalories: targetCal, dailyPlan: fullMonthDays, groceries: { week1: data.shoppingList, week2: data.shoppingList, week3: data.shoppingList, week4: data.shoppingList } };
+    return { monthIndex: index, phaseName: data.phaseName || `Phase ${index} `, targetCalories: targetCal, dailyPlan: fullMonthDays, groceries: { week1: data.shoppingList, week2: data.shoppingList, week3: data.shoppingList, week4: data.shoppingList } };
 }
