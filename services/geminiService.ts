@@ -746,6 +746,31 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             safetyDirectives += "MICROBIOME RESTORATION: ANTIBIOTICS DETECTED. PRESCRIBE PROBIOTIC-RICH FOODS (YOGURT, KEFIR) *MINIMUM 2 HOURS* AFTER MEDICATION DOSE. ";
         }
 
+        // --- ROUND 15: EDGE CASE & PERMUTATION REMEDIATION ---
+
+        // 1. BARIATRIC vs. FASTING / OMAD
+        // Impossible Physics: Small Stomach (200g) cannot fit 1500kcal in short window.
+        // We infer Fasting from context or just apply general volume safety rule.
+        if (isBariatric) {
+            safetyDirectives += "PHYSICS CONFLICT: BARIATRIC PATIENT. DO NOT ALLOW 'ONE MEAL A DAY' OR SHORT EATING WINDOWS. STOMACH VOLUME IS TOO SMALL. MUST PRESCRIBE 5-6 SMALL MEALS. ";
+        }
+
+        // 2. THE "IMPOSSIBLE VEGAN" (Vegan + Soy + Gluten + Nut Allergies)
+        const isVegan = stats.dietType.includes('Vegan') || stats.dietType.includes('Vegetarian');
+        const allergyText = stats.allergies.toLowerCase(); // Fix Scope
+        const hasSoy = allergyText.includes('soy');
+        const hasGluten = allergyText.includes('gluten') || isCeliac;
+        const hasNut = allergyText.includes('nut');
+
+        if (isVegan && hasSoy && hasGluten && hasNut) {
+            safetyDirectives += "EXTREME RESTRICTION WARNING: VEGAN + NO SOY/GLUTEN/NUTS DETECTED. PROTEIN SOURCES ARE CRITICALLY LIMITED. YOU MUST PRESCRIBE 'PEA PROTEIN ISOLATE' OR 'HEMP SEEDS' IN EVERY MEAL TO HIT TARGETS. ";
+        }
+
+        // 3. EXTREME POVERTY CHECK
+        if (stats.budgetAmount < 30) {
+            safetyDirectives += "BUDGET EMERGENCY: USER HAS EXTREMELY LOW BUDGET (< $30). RELY HEAVILY ON DRIED BEANS, RICE, OATS, POTATOES. LIMIT MEAT COMPLETELY. ";
+        }
+
         // ROUND 8: SHIFT WORK (INSULIN RESISTANCE)
         if (isShiftWorker) {
             safetyDirectives += "CHRONOBIOLOGY: SHIFT WORKER. REVERSE CARB TIMING. LOW CARB DURING NIGHT SHIFT to manage insulin resistance. CARB LOADING BEFORE SLEEP. ";
