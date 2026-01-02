@@ -94,6 +94,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     if (step === 2) {
       if (!formData.height || formData.height < 50 || formData.height > 300) return alert("Please enter a valid height.");
       if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
+    }
+
+    if (step === 3) {
       if (!formData.region) return alert("Please enter your City/Region.");
     }
 
@@ -702,7 +705,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       </div>
 
       {/* Footer - STICKY ON MOBILE */}
-      <div className="shrink-0 flex justify-between items-center px-6 py-4 md:px-10 md:py-8 border-t border-slate-5 bg-white z-20 md:relative sticky bottom-0 left-0 right-0">
+      <div className="shrink-0 flex justify-between items-center px-6 pt-4 pb-8 md:px-10 md:py-8 border-t border-slate-5 bg-white z-20 md:relative sticky bottom-0 left-0 right-0">
         {step > 1 ? (
           <button onClick={handleBack} className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
             Back
