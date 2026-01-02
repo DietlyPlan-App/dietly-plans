@@ -763,14 +763,18 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         const hasNut = allergyText.includes('nut');
 
         if (isVegan && hasSoy && hasGluten && hasNut) {
-            safetyDirectives += "EXTREME RESTRICTION WARNING: VEGAN + NO SOY/GLUTEN/NUTS DETECTED. PROTEIN SOURCES ARE CRITICALLY LIMITED. YOU MUST PRESCRIBE 'PEA PROTEIN ISOLATE' OR 'HEMP SEEDS' IN EVERY MEAL TO HIT TARGETS. ";
+            safetyDirectives += "EXTREME RESTRICTION WARNING: VEGAN + NO SOY/GLUTEN/NUTS DETECTED. PROTEIN SOURCES ARE CRITICALLY LIMITED. YOU MUST PRESCRIBE 'PEA PROTEIN ISOLATE', 'HEMP SEEDS' OR 'RICE PROTEIN POWDER' IN EVERY MEAL TO HIT TARGETS. DO NOT FAIL. ";
         }
 
         // 3. EXTREME POVERTY CHECK
         if (stats.budgetAmount < 30) {
             if (isRenal) {
                 safetyDirectives += "BUDGET EMERGENCY (RENAL MODE): EXTREMELY LOW BUDGET. DO NOT USE BEANS/POTATOES (High K/Phos). RELY ON WHITE RICE, PASTA, EGG WHITES, FROZEN VEG. ";
-            } else {
+            }
+            else if (stats.budgetAmount < 20) {
+                safetyDirectives += "SURVIVAL MODE (ULTRA-LOW BUDGET): BUDGET < $20. IGNORE TASTE/VARIETY. FOCUS PURELY ON CALORIC SURVIVAL. USE OIL, RICE, DRIED BEANS, OATS ONLY. LIMIT VEGETABLES TO FROZEN SPINACH/PEAS. ";
+            }
+            else {
                 safetyDirectives += "BUDGET EMERGENCY: USER HAS EXTREMELY LOW BUDGET (< $30). RELY HEAVILY ON DRIED BEANS, RICE, OATS, POTATOES. LIMIT MEAT COMPLETELY. ";
             }
         }

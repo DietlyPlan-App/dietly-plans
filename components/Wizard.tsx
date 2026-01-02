@@ -104,6 +104,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       const isKeto = diet.includes('keto');
       const isNoGallbladder = conditions.includes('gallbladder') || conditions.includes('cholecystectomy');
       const isRenal = conditions.includes('renal') || conditions.includes('kidney') || conditions.includes('ckd');
+      const isBariatric = conditions.includes('bariatric') || conditions.includes('gastric') || conditions.includes('bypass') || conditions.includes('sleeve');
+      const isBatch = formData.mealStrategy === 'batch';
+      const isOMAD = conditions.includes('omad') || conditions.includes('one meal');
 
       // CONFLICT 1: KETO + NO GALLBLADDER
       if (isKeto && isNoGallbladder) {
@@ -123,6 +126,26 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         });
         setShowConflictModal(true);
         return; // HALT
+      }
+
+      // CONFLICT 3: BARIATRIC + BATCH/OMAD
+      if (isBariatric && (isBatch || isOMAD)) {
+        setConflictMessage({
+          title: "⚠️ Volume Risk (Safety)",
+          description: "You selected 'Daily Batch' (typically 1-2 large meals) but indicated Bariatric Surgery. Your post-op stomach cannot handle large volumes of food at once. Please switch Strategy to 'Fresh' (Smaller, frequent meals) to avoid Dumping Syndrome."
+        });
+        setShowConflictModal(true);
+        return; // HALT
+      }
+
+      // CONFLICT 4: ULTRA-LOW BUDGET
+      if (formData.budgetAmount < 20) {
+        setConflictMessage({
+          title: "⚠️ Ultra-Low Budget Warning",
+          description: "A budget of under $20/week is extremely low for a nutritionally complete diet. The AI will prioritize 'Survival Calories' (Rice, Beans, Oil) over variety/taste. We recommend increasing budget to at least $40 if possible."
+        });
+        setShowConflictModal(true);
+        return;
       }
     }
 
