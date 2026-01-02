@@ -33,6 +33,7 @@ This document exhaustively lists every rule, formula, logic, and reasoning engin
     *   **Potassium**: AI Directive to restrictions (No Bananas/Potatoes).
     *   **Phosphorus**: AI Directive to restrict (No Dark Colas/Processed Cheese).
     *   **Water**: Hard Capped at **1.5L/day**.
+    *   **Conflict Resolution**: If Budget < $30, overrides standard "Bean/Potato" advice with "Rice/Pasta/Egg White" to avoid Potassium/Phosphorus spikes.
 *   **Diabetes (Type 2 / Insulin Resistance)**:
     *   **Carb Cap**: Carbohydrates restricted to **35%** max.
     *   **Sugar**: Explicitly capped at 25g (default).
@@ -79,6 +80,7 @@ This document exhaustively lists every rule, formula, logic, and reasoning engin
     *   **Physics**: Maximum meal volume **200g**.
     *   **Dumping Syndrome**: No liquids with meals.
     *   **Liquid Protein**: Prescribed *between* meals if calorie needs are high.
+    *   **Fasting Conflict**: "One Meal A Day" (OMAD) Explicitly BANNED due to stomach volume constraints.
 
 ---
 
@@ -102,7 +104,8 @@ This document exhaustively lists every rule, formula, logic, and reasoning engin
     *   **Keto + Hypertension**: "Salt Paradox" resolved. Target moderate sodium (2.5g) instead of Low (DASH) or High (Keto).
     *   **Keto + Gout**: "Purine Paradox" resolved. Bans Red Meat, forces Poultry Keto.
 *   **Economic Rationality**:
-    *   **Budgeting**: If Budget < 60 Currency Units -> Replaces Steak/Salmon with Eggs/Canned Fish/Ground Beef.
+    *   **Budgeting**: If Budget < $30 -> Replaces Steak/Salmon with Eggs/Canned Fish/Ground Beef/Beans.
+    *   **Budget + Renal Conflict**: If User is Renal AND Poor, swaps Beans/Potatoes (High Phos/K) for White Rice/Egg White/Pasta (Safe renal cheap foods).
 *   **Physical Rationality**:
     *   **Batch Cooking**: Salads/Crispy items BANNED (they get soggy).
     *   **Leftovers**: Dinner portions doubled, next day Lunch is explicitly 'Leftovers'.

@@ -768,7 +768,11 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
         // 3. EXTREME POVERTY CHECK
         if (stats.budgetAmount < 30) {
-            safetyDirectives += "BUDGET EMERGENCY: USER HAS EXTREMELY LOW BUDGET (< $30). RELY HEAVILY ON DRIED BEANS, RICE, OATS, POTATOES. LIMIT MEAT COMPLETELY. ";
+            if (isRenal) {
+                safetyDirectives += "BUDGET EMERGENCY (RENAL MODE): EXTREMELY LOW BUDGET. DO NOT USE BEANS/POTATOES (High K/Phos). RELY ON WHITE RICE, PASTA, EGG WHITES, FROZEN VEG. ";
+            } else {
+                safetyDirectives += "BUDGET EMERGENCY: USER HAS EXTREMELY LOW BUDGET (< $30). RELY HEAVILY ON DRIED BEANS, RICE, OATS, POTATOES. LIMIT MEAT COMPLETELY. ";
+            }
         }
 
         // ROUND 8: SHIFT WORK (INSULIN RESISTANCE)
