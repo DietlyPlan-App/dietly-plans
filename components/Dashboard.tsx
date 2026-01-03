@@ -485,7 +485,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
             </div>
 
             {/* 2. PHASE (MONTH) SELECTOR */}
-            <div className="bg-dark rounded-2xl md:rounded-[2rem] p-1.5 md:p-2 flex flex-col md:flex-row gap-2 shadow-xl shadow-slate-200 sticky top-2 z-30 mx-2 md:mx-0">
+            <div className="bg-dark rounded-2xl md:rounded-[2rem] p-1.5 md:p-2 flex flex-col md:flex-row gap-2 shadow-xl shadow-slate-200 relative md:sticky md:top-2 z-30 mx-2 md:mx-0">
                 <div className="flex-1 grid grid-cols-3 gap-1.5 md:gap-2">
                     {(['month1', 'month2', 'month3'] as const).map((m, idx) => (
                         <button
@@ -782,8 +782,8 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                 )
             }
 
-            {/* Floating PDF Button */}
-            <div className="fixed bottom-8 right-8 z-40 animate-in zoom-in duration-300">
+            {/* Floating PDF Button - Hidden on Mobile if Unpaid to prevent Paywall Overlap */}
+            <div className={`fixed bottom-8 right-8 z-40 animate-in zoom-in duration-300 ${!isPaid ? 'hidden md:block' : ''}`}>
                 <button
                     onClick={handleDownloadRequest}
                     className="bg-primary text-white p-3 md:p-4 rounded-full shadow-2xl shadow-primary/40 hover:bg-primaryDark transition-all flex items-center gap-3 pr-6 md:pr-8 group hover:scale-105"

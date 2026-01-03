@@ -180,13 +180,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
   // Step 1: Basics
   const renderStep1 = () => {
     return (
-      <div className="space-y-5 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-3 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="space-y-1 md:space-y-2">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Let's set your baseline.</h2>
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Basic info to start your profile.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
           <div>
             <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight">
               Gender
@@ -197,7 +197,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                 <button
                   key={g}
                   onClick={() => updateField('gender', g)}
-                  className={`flex-1 py-3.5 md:py-4 px-4 md:px-6 rounded-2xl border-2 capitalize font-bold text-base md:text-lg transition-all active:scale-[0.98] ${formData.gender === g ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
+                  className={`flex-1 py-3 md:py-4 px-4 md:px-6 rounded-2xl border-2 capitalize font-bold text-base md:text-lg transition-all active:scale-[0.98] ${formData.gender === g ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
                 >
                   {g}
                 </button>
@@ -212,7 +212,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               value={formData.age || ''}
               onChange={(e) => updateField('age', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} // Sanitize to 0 if empty
               placeholder="e.g. 30"
-              className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+              className="w-full p-3 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
             />
           </div>
         </div>
@@ -406,6 +406,23 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Calories burned depends heavily on what you do all day.</p>
         </div>
 
+        {/* Region Input - MOVED TO TOP FOR MOBILE VISIBILITY */}
+        <div>
+          <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight text-dark">
+            Region / Location
+          </label>
+          <div className="relative">
+            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
+            <input
+              type="text"
+              placeholder="e.g. New York, USA"
+              value={formData.region}
+              onChange={(e) => updateField('region', e.target.value)}
+              className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight">
             How active are you?
@@ -442,23 +459,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                 <span className="font-bold text-base md:text-lg">{g}</span>
               </button>
             ))}
-          </div>
-        </div>
-
-        {/* Region Input */}
-        <div>
-          <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight text-dark">
-            Region / Location
-          </label>
-          <div className="relative">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
-            <input
-              type="text"
-              placeholder="e.g. New York, USA"
-              value={formData.region}
-              onChange={(e) => updateField('region', e.target.value)}
-              className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
-            />
           </div>
         </div>
       </div>
@@ -694,8 +694,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-2 scrollbar-hide">
+      {/* Content with padding bottom for sticky footer */}
+      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-2 scrollbar-hide pb-28 md:pb-2">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
@@ -705,7 +705,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       </div>
 
       {/* Footer - STICKY ON MOBILE */}
-      <div className="shrink-0 flex justify-between items-center px-6 pt-4 pb-8 md:px-10 md:py-8 border-t border-slate-5 bg-white z-20 md:relative sticky bottom-0 left-0 right-0">
+      <div className="fixed bottom-0 left-0 right-0 md:relative px-6 py-4 md:px-10 md:py-8 border-t border-slate-5 bg-white z-50 flex justify-between items-center md:bg-transparent md:border-none">
         {step > 1 ? (
           <button onClick={handleBack} className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
             Back
