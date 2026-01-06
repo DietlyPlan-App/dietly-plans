@@ -197,7 +197,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                 <button
                   key={g}
                   onClick={() => updateField('gender', g)}
-                  className={`flex-1 py-3 md:py-4 px-4 md:px-6 rounded-2xl border-2 capitalize font-bold text-base md:text-lg transition-all active:scale-[0.98] ${formData.gender === g ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
+                  className={`flex-1 py-3 md:py-4 px-3 md:px-6 rounded-xl border-2 capitalize font-bold text-sm md:text-lg transition-all active:scale-[0.98] ${formData.gender === g ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
                 >
                   {g}
                 </button>
@@ -324,7 +324,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                     const val = parseFloat(e.target.value);
                     updateField('height', isNaN(val) ? 0 : val);
                   }}
-                  className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+                  className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
                 />
               ) : (
                 <div className="flex gap-2.5">
@@ -380,7 +380,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                     updateField('weight', kg);
                   }
                 }}
-                className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+                className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
               />
             </div>
           </div>
@@ -400,7 +400,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     ];
 
     return (
-      <div className="space-y-4 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="space-y-2 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
         <div className="space-y-1 md:space-y-2">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Your context.</h2>
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Calories burned depends heavily on what you do all day.</p>
@@ -418,7 +418,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               placeholder="e.g. New York, USA"
               value={formData.region}
               onChange={(e) => updateField('region', e.target.value)}
-              className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+              className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
             />
           </div>
         </div>
@@ -428,18 +428,18 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             How active are you?
             <Tooltip text="Be honest. If you select too high, you might not lose weight." />
           </label>
-          <div className="grid grid-cols-1 gap-2.5 md:gap-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
             {activityOptions.map(option => (
               <button
                 key={option.id}
                 onClick={() => updateField('activity', option.id)}
-                className={`p-3.5 md:p-5 text-left rounded-2xl border-2 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-between h-full group ${formData.activity === option.id ? 'border-primary bg-primary/5 text-primary shadow-md' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
+                className={`p-2 md:p-5 text-left rounded-xl border-2 transition-all hover:scale-[1.01] active:scale-[0.98] flex flex-col justify-center h-full group ${formData.activity === option.id ? 'border-primary bg-primary/5 text-primary shadow-md' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
               >
-                <div>
-                  <div className="font-bold text-base md:text-lg">{option.label}</div>
-                  <div className="text-[11px] md:text-sm opacity-80 font-medium mt-0.5">{option.sub}</div>
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="font-bold text-xs md:text-lg">{option.label}</div>
+                  {formData.activity === option.id && <div className="bg-primary rounded-full p-0.5 shrink-0 animate-in zoom-in duration-300"><Check className="w-3 h-3 text-white" /></div>}
                 </div>
-                {formData.activity === option.id && <div className="bg-primary rounded-full p-1 shrink-0 ml-2 animate-in zoom-in duration-300"><Check className="w-4 h-4 md:w-5 md:h-5 text-white" /></div>}
+                <div className="text-[10px] md:text-sm opacity-80 font-medium leading-tight">{option.sub}</div>
               </button>
             ))}
           </div>
@@ -449,12 +449,12 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight text-dark">
             Primary Goal
           </label>
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+          <div className="grid grid-cols-3 gap-2 md:flex md:flex-row md:gap-4">
             {(['lose', 'maintain', 'gain'] as Goal[]).map(g => (
               <button
                 key={g}
                 onClick={() => updateField('goal', g)}
-                className={`flex-1 py-3.5 md:py-5 rounded-2xl border-2 capitalize transition-all active:scale-[0.98] ${formData.goal === g ? 'border-secondary bg-secondary text-white shadow-xl shadow-secondary/30' : 'border-slate-100 text-slate-500 bg-white hover:border-slate-200'}`}
+                className={`flex-1 py-3 md:py-5 rounded-xl border-2 capitalize transition-all active:scale-[0.98] ${formData.goal === g ? 'border-secondary bg-secondary text-white shadow-xl shadow-secondary/30' : 'border-slate-100 text-slate-500 bg-white hover:border-slate-200'}`}
               >
                 <span className="font-bold text-base md:text-lg">{g}</span>
               </button>
@@ -568,7 +568,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               <button
                 key={strategy.id}
                 onClick={() => updateField('mealStrategy', strategy.id)}
-                className={`p-3.5 md:p-4 rounded-2xl border-2 flex flex-row sm:flex-col items-center gap-3 sm:gap-2 text-left sm:text-center transition-all active:scale-[0.98] ${formData.mealStrategy === strategy.id ? 'border-secondary bg-secondary/5 text-secondary shadow-lg' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
+                className={`p-3 md:p-4 rounded-xl border-2 flex flex-row sm:flex-col items-center gap-2 sm:gap-2 text-left sm:text-center transition-all active:scale-[0.98] ${formData.mealStrategy === strategy.id ? 'border-secondary bg-secondary/5 text-secondary shadow-lg' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
               >
                 <strategy.icon className="w-6 h-6 md:w-8 md:h-8 shrink-0" />
                 <div>
@@ -620,7 +620,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             placeholder="e.g. Peanuts, Gluten..."
             value={formData.allergies}
             onChange={(e) => updateField('allergies', e.target.value)}
-            className="w-full p-4 md:p-5 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark min-h-[100px] md:min-h-[120px] resize-none transition-all"
+            className="w-full p-3 md:p-5 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark min-h-[60px] md:min-h-[120px] resize-none transition-all"
           />
         </div>
 
@@ -659,7 +659,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               autoComplete="name"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
-              className="w-full pl-11 md:pl-12 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
+              className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
             />
           </div>
         </div>
@@ -686,7 +686,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       <div className="absolute top-0 left-0 right-0 h-1 md:h-2 bg-gradient-to-r from-primary to-emerald-400 z-20" />
 
       {/* Header */}
-      <div className="shrink-0 px-6 pt-5 pb-2 md:px-10 md:pt-10 md:pb-2 z-10 bg-white">
+      <div className="shrink-0 px-5 pt-4 pb-1 md:px-10 md:pt-10 md:pb-2 z-10 bg-white">
         <div className="flex gap-1.5 md:gap-2">
           {[1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className={`h-1 md:h-2 flex-1 rounded-full transition-all duration-500 ${step >= i ? 'bg-primary' : 'bg-slate-100'}`} />
@@ -695,7 +695,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       </div>
 
       {/* Content with padding bottom for sticky footer */}
-      <div className="flex-1 overflow-y-auto px-6 md:px-10 py-2 scrollbar-hide pb-28 md:pb-2">
+      <div className="flex-1 overflow-y-auto px-5 md:px-10 py-1 scrollbar-hide pb-20 md:pb-2">
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
@@ -715,7 +715,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         <button
           onClick={step === 6 ? handleComplete : handleNext}
           disabled={loading || isSubmitting}
-          className="bg-primary hover:bg-primaryDark text-white px-8 md:px-10 py-4 md:py-5 rounded-2xl font-bold text-base md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-primary hover:bg-primaryDark text-white px-6 md:px-10 py-3 md:py-5 rounded-xl font-bold text-sm md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading || isSubmitting ? 'Thinking...' : (step === 6 ? 'Generate' : 'Next')}
           {(!loading && !isSubmitting) && <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />}
