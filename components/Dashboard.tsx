@@ -93,7 +93,7 @@ const MealDetail: React.FC<{ meal: Meal; type: string; isReheat?: boolean }> = (
                             {isReheat && <span className="bg-sky-100 text-sky-600 px-1.5 rounded text-[9px] flex items-center gap-1"><Microwave className="w-3 h-3" /> REHEAT</span>}
                             {hasWarning && <AlertTriangle className="w-3 h-3 text-amber-500" />}
                         </p>
-                        <p className={`text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-1 ${isReheat ? 'text-slate-600' : 'text-dark'}`}>
+                        <p className={`text-sm font-bold leading-tight group-hover:text-primary transition-colors line-clamp-1 md:line-clamp-none ${isReheat ? 'text-slate-600' : 'text-dark'}`}>
                             {meal.name}
                         </p>
                     </div>
@@ -324,7 +324,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     const includeSnacks = plan.userStats.includeSnacks; // Used for "Daily Fuel" label
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 pb-32">
+        <div className="max-w-5xl mx-auto space-y-8 pb-48 md:pb-32">
 
             {/* 1. Header & Global Stats */}
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-3 md:gap-4 px-2 md:px-0">
@@ -348,7 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                         <Flame className="w-5 h-5 md:w-6 md:h-6 fill-orange-500/20" />
                     </div>
                     <div>
-                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                             Daily Fuel <span className="text-orange-300">({includeSnacks ? '4' : '3'} Meals)</span>
                         </p>
                         <p className="text-xl md:text-2xl font-black text-dark tracking-tight">{currentMonthData.targetCalories} <span className="text-[10px] md:text-xs text-slate-400 font-medium">kcal</span></p>

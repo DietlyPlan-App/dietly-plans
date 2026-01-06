@@ -9,6 +9,8 @@ import { UserStats, AIResponse } from './types';
 import { Zap, LogOut, X, CheckCircle } from 'lucide-react';
 import { safeLocalStorage } from './src/utils/storageUtils';
 
+
+
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null); // Track User Session
   const [currentStep, setCurrentStep] = useState<'wizard' | 'loading' | 'dashboard'>(() => {
@@ -17,12 +19,12 @@ const App: React.FC = () => {
     return (saved as any) || 'wizard';
   });
   const [loadingText, setLoadingText] = useState("Initializing AI...");
-
   // RESTORE PLAN FROM LOCAL STORAGE (Instant Load)
   const [plan, setPlan] = useState<AIResponse | null>(() => {
     const saved = safeLocalStorage.getItem('dietly_plan');
     return saved ? JSON.parse(saved) : null;
   });
+
 
   const [isPaid, setIsPaid] = useState(false);
   const [planTier, setPlanTier] = useState<'free' | '1month' | 'full'>('free');
@@ -199,7 +201,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-light font-sans text-dark selection:bg-primary selection:text-white relative">
       {/* Navbar */}
-      <nav className="p-3 md:p-6 flex justify-between items-center sticky top-0 bg-light/80 backdrop-blur-md z-40 border-b border-slate-200">
+      <nav className="p-2 md:p-6 flex justify-between items-center sticky top-0 bg-light/80 backdrop-blur-md z-40 border-b border-slate-200">
         <div
           className="flex items-center gap-2 text-primary font-extrabold text-xl md:text-2xl tracking-tighter cursor-default"
         >
@@ -212,13 +214,14 @@ const App: React.FC = () => {
         {session ? (
           <div className="flex gap-4">
             {currentStep === 'dashboard' && (
-              <button onClick={resetApp} className="text-sm font-bold text-slate-500 hover:text-primary transition-colors">
-                New Plan
+              <button onClick={resetApp} className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+                <Zap className="w-4 h-4 md:hidden" />
+                <span className="hidden sm:inline">New Plan</span>
               </button>
             )}
             <button onClick={handleLogout} className="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
               <LogOut className="w-4 h-4" />
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         ) : (
@@ -292,7 +295,7 @@ const App: React.FC = () => {
 
         {/* AUTH MODAL INTERCEPT */}
         {showAuthModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
             <div className="relative w-full max-w-md">
               <button
                 onClick={() => setShowAuthModal(false)}
