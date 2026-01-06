@@ -86,22 +86,20 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     // Basic Haptic Feedback
     if (navigator.vibrate) navigator.vibrate(50);
 
-    // --- INPUT VALIDATION (ROUND 8) ---
+    // --- INPUT VALIDATION (Merged Step 1: Basics + Physical) ---
     if (step === 1) {
-      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age (12-120).");
+      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age.");
       if (!formData.gender) return alert("Please select a gender.");
-    }
-    if (step === 2) {
       if (!formData.height || formData.height < 50 || formData.height > 300) return alert("Please enter a valid height.");
       if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
     }
 
-    if (step === 3) {
+    if (step === 2) {
       if (!formData.region) return alert("Please enter your City/Region.");
     }
 
-    // --- CONFLICT LOGIC CHECK (Before Step 6) ---
-    if (step === 5) { // Just before Final Step
+    // --- CONFLICT LOGIC CHECK (Before Step 5) ---
+    if (step === 4) { // Just before Final Step
       const conditions = (formData.medications || "").toLowerCase() + " " + (formData.allergies || "").toLowerCase();
       const diet = (formData.dietType || "").toLowerCase();
       const isKeto = diet.includes('keto');
@@ -186,7 +184,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Basic info to start your profile.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+        <div className="space-y-4">
+          {/* Row 1: Gender */}
           <div>
             <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight">
               Gender
@@ -204,16 +203,92 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               ))}
             </div>
           </div>
+
+          {/* Row 2: Metrics Grid (Age | Height | Weight) */}
           <div>
-            <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight">Age</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={formData.age || ''}
-              onChange={(e) => updateField('age', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} // Sanitize to 0 if empty
-              placeholder="e.g. 30"
-              className="w-full p-3 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
-            />
+            <div className="flex justify-between items-center mb-1.5 md:mb-2">
+              <label className="block text-xs md:text-base font-bold text-slate-500 uppercase tracking-tight">Measurements</label>
+              {/* Compact Unit Toggle */}
+              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                <button
+                  onClick={() => updateField('unit', 'metric')}
+                  className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'metric' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                >
+                  Metric
+                </button>
+                <button
+                  onClick={() => updateField('unit', 'imperial')}
+                  className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'imperial' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                >
+                  Imperial
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
+              {/* Age */}
+              <div className="relative">
+                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Age</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={formData.age || ''}
+                  onChange={(e) => updateField('age', parseInt(e.target.value) || 0)}
+                  className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                  placeholder="30"
+                />
+              </div>
+
+              {/* Height */}
+              <div className="relative">
+                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Height ({formData.unit === 'metric' ? 'cm' : 'ft.in'})</label>
+                {formData.unit === 'metric' ? (
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={formData.height || ''}
+                    onChange={(e) => updateField('height', parseFloat(e.target.value) || 0)}
+                    className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                    placeholder="170"
+                  />
+                ) : (
+                  // Simple Imperial Input for Compactness (decimal ft or just show cm internal conversion? User needs ft/in)
+                  // Let's stick to a single input for simplicity in this grid? No, ft/in is hard in one input.
+                  // Let's use flexible input: "5.10" -> 5ft 10in parser?
+                  // OR just two small inputs?
+                  // For simplicity in this grid, let's keep it numeric and assume measuring in INCHES or CM internally, or just CM.
+                  // Let's try a smart input:
+                  <input
+                    type="text"
+                    value={Math.floor(formData.height / 30.48) + "." + Math.round((formData.height % 30.48) / 2.54)}
+                    onChange={(e) => {
+                      const parts = e.target.value.split('.');
+                      const ft = parseInt(parts[0]) || 0;
+                      const inch = parseInt(parts[1]) || 0;
+                      updateField('height', (ft * 30.48) + (inch * 2.54));
+                    }}
+                    className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                    placeholder="5.10"
+                  />
+                )}
+              </div>
+
+              {/* Weight */}
+              <div className="relative">
+                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Weight ({formData.unit === 'metric' ? 'kg' : 'lbs'})</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={formData.unit === 'metric' ? formData.weight : Math.round(formData.weight * 2.20462)}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    updateField('weight', formData.unit === 'metric' ? val : val * 0.453592);
+                  }}
+                  className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                  placeholder="70"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -276,121 +351,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     );
   };
 
-  // Step 2: Height & Weight
+  // Step 2: Lifestyle & Region
   const renderStep2 = () => {
-    const currentWeightDisplay = formData.unit === 'metric'
-      ? formData.weight
-      : Math.round(formData.weight * 2.20462);
-
-    const currentFeet = Math.floor(formData.height / 30.48);
-    const currentInches = Math.round((formData.height % 30.48) / 2.54);
-
-    return (
-      <div className="space-y-5 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="space-y-1 md:space-y-2">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Physical Metrics.</h2>
-          <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Accurate data ensures safe targets.</p>
-        </div>
-
-        {/* Unit Toggle */}
-        <div className="flex bg-slate-100 rounded-xl p-1 w-full md:w-fit border border-slate-200">
-          <button
-            onClick={() => updateField('unit', 'metric')}
-            className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-xs md:text-base font-bold transition-all ${formData.unit === 'metric' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            Metric (kg/cm)
-          </button>
-          <button
-            onClick={() => updateField('unit', 'imperial')}
-            className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-xs md:text-base font-bold transition-all ${formData.unit === 'imperial' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            Imperial (lbs/ft)
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div>
-            <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight">
-              Height ({formData.unit === 'metric' ? 'cm' : 'ft / in'})
-            </label>
-            <div className="relative">
-              <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
-              {formData.unit === 'metric' ? (
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={formData.height || ''}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    updateField('height', isNaN(val) ? 0 : val);
-                  }}
-                  className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
-                />
-              ) : (
-                <div className="flex gap-2.5">
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      placeholder="ft"
-                      value={currentFeet}
-                      onChange={(e) => {
-                        const newFt = parseInt(e.target.value) || 0;
-                        const totalCm = (newFt * 30.48) + (currentInches * 2.54);
-                        updateField('height', totalCm);
-                      }}
-                      className="w-full pl-6 p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">ft</span>
-                  </div>
-                  <div className="relative flex-1">
-                    <input
-                      type="number"
-                      placeholder="in"
-                      value={currentInches}
-                      onChange={(e) => {
-                        const newIn = parseInt(e.target.value) || 0;
-                        const totalCm = (currentFeet * 30.48) + (newIn * 2.54);
-                        updateField('height', totalCm);
-                      }}
-                      className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-base md:text-lg text-dark transition-all"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-xs">in</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight text-dark">
-              Weight ({formData.unit === 'metric' ? 'kg' : 'lbs'})
-            </label>
-            <div className="relative">
-              <Weight className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
-              <input
-                type="number"
-                inputMode="decimal"
-                value={currentWeightDisplay || ''}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  if (isNaN(val)) {
-                    updateField('weight', 0); // Sanitize to 0
-                  } else {
-                    const kg = formData.unit === 'metric' ? val : val * 0.453592;
-                    updateField('weight', kg);
-                  }
-                }}
-                className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  };
-
-  // Step 3: Lifestyle & Region
-  const renderStep3 = () => {
     const activityOptions: { id: ActivityLevel; label: string; sub: string }[] = [
       { id: 'sedentary', label: 'Desk Job', sub: 'I sit most of the day' },
       { id: 'light', label: 'Lightly Active', sub: 'I stand or walk a bit' },
@@ -465,8 +427,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     )
   };
 
-  // Step 4: Preferences
-  const renderStep4 = () => (
+  // Step 3: Preferences
+  const renderStep3 = () => (
     <div className="space-y-4 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
       <div className="space-y-1 md:space-y-2">
         <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Preferences.</h2>
@@ -602,8 +564,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     </div>
   );
 
-  // Step 5: Health & Safety
-  const renderStep5 = () => (
+  // Step 4: Health & Safety
+  const renderStep4 = () => (
     <div className="space-y-5 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
       <div className="space-y-1 md:space-y-2">
         <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Safety First.</h2>
@@ -640,8 +602,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     </div>
   );
 
-  // Step 6: Contact
-  const renderStep6 = () => (
+  // Step 5: Contact
+  const renderStep5 = () => (
     <div className="space-y-5 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
       <div className="space-y-1 md:space-y-2">
         <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Almost there.</h2>
@@ -688,7 +650,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       {/* Header */}
       <div className="shrink-0 px-5 pt-4 pb-1 md:px-10 md:pt-10 md:pb-2 z-10 bg-white">
         <div className="flex gap-1.5 md:gap-2">
-          {[1, 2, 3, 4, 5, 6].map(i => (
+          {[1, 2, 3, 4, 5].map(i => (
             <div key={i} className={`h-1 md:h-2 flex-1 rounded-full transition-all duration-500 ${step >= i ? 'bg-primary' : 'bg-slate-100'}`} />
           ))}
         </div>
@@ -701,7 +663,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
         {step === 5 && renderStep5()}
-        {step === 6 && renderStep6()}
       </div>
 
       {/* Footer - STICKY ON MOBILE */}
@@ -713,11 +674,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         ) : <div />}
 
         <button
-          onClick={step === 6 ? handleComplete : handleNext}
+          onClick={step === 5 ? handleComplete : handleNext}
           disabled={loading || isSubmitting}
           className="bg-primary hover:bg-primaryDark text-white px-6 md:px-10 py-3 md:py-5 rounded-xl font-bold text-sm md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading || isSubmitting ? 'Thinking...' : (step === 6 ? 'Generate' : 'Next')}
+          {loading || isSubmitting ? 'Thinking...' : (step === 5 ? 'Generate' : 'Next')}
           {(!loading && !isSubmitting) && <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />}
         </button>
       </div>
