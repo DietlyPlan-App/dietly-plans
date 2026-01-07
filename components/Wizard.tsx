@@ -206,23 +206,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
           {/* Row 2: Metrics Grid (Age | Height | Weight) */}
           <div>
-            <div className="flex justify-between items-center mb-1.5 md:mb-2">
+            <div className="mb-1.5 md:mb-2">
               <label className="block text-xs md:text-base font-bold text-slate-500 uppercase tracking-tight">Measurements</label>
-              {/* Compact Unit Toggle */}
-              <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
-                <button
-                  onClick={() => updateField('unit', 'metric')}
-                  className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'metric' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-                >
-                  Metric
-                </button>
-                <button
-                  onClick={() => updateField('unit', 'imperial')}
-                  className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'imperial' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
-                >
-                  Imperial
-                </button>
-              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:gap-4">
@@ -237,6 +222,24 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                   className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
                   placeholder="30"
                 />
+              </div>
+
+              {/* Unit Toggle - Right Aligned below Age */}
+              <div className="col-span-2 flex justify-end">
+                <div className="flex bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+                  <button
+                    onClick={() => updateField('unit', 'metric')}
+                    className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'metric' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Metric
+                  </button>
+                  <button
+                    onClick={() => updateField('unit', 'imperial')}
+                    className={`px-2 py-1 rounded text-[10px] md:text-xs font-bold transition-all ${formData.unit === 'imperial' ? 'bg-white text-primary shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Imperial
+                  </button>
+                </div>
               </div>
 
               {/* Height */}
