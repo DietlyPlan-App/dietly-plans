@@ -225,9 +225,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 md:gap-4">
-              {/* Age */}
-              <div className="relative">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {/* Age - Full Width */}
+              <div className="relative col-span-2">
                 <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Age</label>
                 <input
                   type="number"
@@ -252,12 +252,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                     placeholder="170"
                   />
                 ) : (
-                  // Simple Imperial Input for Compactness (decimal ft or just show cm internal conversion? User needs ft/in)
-                  // Let's stick to a single input for simplicity in this grid? No, ft/in is hard in one input.
-                  // Let's use flexible input: "5.10" -> 5ft 10in parser?
-                  // OR just two small inputs?
-                  // For simplicity in this grid, let's keep it numeric and assume measuring in INCHES or CM internally, or just CM.
-                  // Let's try a smart input:
                   <input
                     type="text"
                     value={Math.floor(formData.height / 30.48) + "." + Math.round((formData.height % 30.48) / 2.54)}
