@@ -392,13 +392,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               <button
                 key={option.id}
                 onClick={() => updateField('activity', option.id)}
-                className={`p-2 md:p-5 text-left rounded-xl border-2 transition-all hover:scale-[1.01] active:scale-[0.98] flex flex-col justify-center h-full group ${formData.activity === option.id ? 'border-primary bg-primary/5 text-primary shadow-md' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
+                className={`p-4 md:p-5 text-left rounded-xl border-2 transition-all hover:scale-[1.01] active:scale-[0.98] flex flex-col justify-center h-full group ${formData.activity === option.id ? 'border-primary bg-primary/5 text-primary shadow-md' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
               >
                 <div className="flex items-center justify-between w-full mb-1">
-                  <div className="font-bold text-xs md:text-lg">{option.label}</div>
+                  <div className="font-bold text-sm md:text-lg">{option.label}</div>
                   {formData.activity === option.id && <div className="bg-primary rounded-full p-0.5 shrink-0 animate-in zoom-in duration-300"><Check className="w-3 h-3 text-white" /></div>}
                 </div>
-                <div className="text-[10px] md:text-sm opacity-80 font-medium leading-tight">{option.sub}</div>
+                <div className="text-xs md:text-sm opacity-80 font-medium leading-tight">{option.sub}</div>
               </button>
             ))}
           </div>
