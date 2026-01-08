@@ -365,23 +365,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Calories burned depends heavily on what you do all day.</p>
         </div>
 
-        {/* Region Input - MOVED TO TOP FOR MOBILE VISIBILITY */}
-        <div>
-          <label className="block text-xs md:text-base font-bold text-slate-500 mb-2.5 md:mb-2 uppercase tracking-tight text-dark">
-            Region / Location
-          </label>
-          <div className="relative">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
-            <input
-              type="text"
-              placeholder="e.g. New York, USA"
-              value={formData.region}
-              onChange={(e) => updateField('region', e.target.value)}
-              className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
-            />
-          </div>
-        </div>
-
         <div>
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-3 md:mb-3 uppercase tracking-tight">
             How active are you?
@@ -418,6 +401,23 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                 <span className="font-bold text-base md:text-lg">{g}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Region Input - MOVED TO BOTTOM */}
+        <div>
+          <label className="block text-xs md:text-base font-bold text-slate-500 mb-2.5 md:mb-2 uppercase tracking-tight text-dark">
+            Region / Location
+          </label>
+          <div className="relative">
+            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-slate-400" />
+            <input
+              type="text"
+              placeholder="e.g. New York, USA"
+              value={formData.region}
+              onChange={(e) => updateField('region', e.target.value)}
+              className="w-full pl-10 md:pl-12 p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark transition-all"
+            />
           </div>
         </div>
       </div>
