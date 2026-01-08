@@ -359,7 +359,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     ];
 
     return (
-      <div className="space-y-2 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
         <div className="space-y-1 md:space-y-2">
           <h2 className="text-2xl md:text-3xl font-extrabold text-white md:text-dark">Your context.</h2>
           <p className="text-slate-400 md:text-slate-500 text-sm md:text-lg">Calories burned depends heavily on what you do all day.</p>
@@ -367,7 +367,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
         {/* Region Input - MOVED TO TOP FOR MOBILE VISIBILITY */}
         <div>
-          <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight text-dark">
+          <label className="block text-xs md:text-base font-bold text-slate-500 mb-2.5 md:mb-2 uppercase tracking-tight text-dark">
             Region / Location
           </label>
           <div className="relative">
@@ -383,7 +383,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         </div>
 
         <div>
-          <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight">
+          <label className="block text-xs md:text-base font-bold text-slate-500 mb-3 md:mb-3 uppercase tracking-tight">
             How active are you?
             <Tooltip text="Be honest. If you select too high, you might not lose weight." />
           </label>
@@ -405,7 +405,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         </div>
 
         <div>
-          <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight text-dark">
+          <label className="block text-xs md:text-base font-bold text-slate-500 mb-3 md:mb-3 uppercase tracking-tight text-dark">
             Primary Goal
           </label>
           <div className="grid grid-cols-3 gap-2 md:flex md:flex-row md:gap-4">
