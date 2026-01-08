@@ -734,11 +734,12 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                                                 </div>
                                                 <span className="text-2xl font-black">$9.99</span>
                                             </div>
-                                            <h4 className="text-lg font-bold text-left mb-2">1-Month Kickstart</h4>
+                                            <h4 className="text-lg font-bold text-left mb-2">1-Month Kickstart Diet</h4>
                                             <ul className="text-left space-y-2 mb-6 text-xs text-slate-400 font-medium">
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Full Month 1 Access</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Basic Shopping List</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> PDF Export</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 30-Day Diet Plan</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Easy Shopping List</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Downloadable Guide</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Start Burning Fat Fast</li>
                                             </ul>
                                         </div>
                                         <button
@@ -746,25 +747,26 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                                             disabled={!!isCheckoutLoading}
                                             className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
-                                            {isCheckoutLoading === '1month' ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start 1 Month"}
+                                            {isCheckoutLoading === '1month' ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unlock Kickstart Diet"}
                                         </button>
                                     </div>
 
                                     {/* TIER 2: 3 Months */}
                                     <div className="bg-secondary p-5 rounded-3xl border border-secondary shadow-lg shadow-secondary/20 hover:scale-[1.02] transition-all group flex flex-col justify-between relative overflow-hidden">
-                                        <div className="absolute top-4 right-4 bg-white/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Best Value</div>
-                                        <div className="relative z-10">
+                                        <div className="absolute top-3 right-3 bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">Best Value</div>
+                                        <div className="relative z-10 pt-6">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div className="p-2 bg-white/20 rounded-xl">
                                                     <Zap className="w-5 h-5 text-white fill-white" />
                                                 </div>
                                                 <span className="text-2xl font-black">$19.99</span>
                                             </div>
-                                            <h4 className="text-lg font-bold text-left mb-2">Full 12-Week Roadmap</h4>
+                                            <h4 className="text-lg font-bold text-left mb-2">3-Month Diet Roadmap</h4>
                                             <ul className="text-left space-y-2 mb-6 text-xs text-white/80 font-medium">
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Full 3-Month Access</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> All Phase Adjustments</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Premium 12-Week PDF</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> 90-Day Unlocked Access</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Weekly Progress Adjustments</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Complete 12-Week Guide</li>
+                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Keep The Weight Off</li>
                                             </ul>
                                         </div>
                                         <button
@@ -772,7 +774,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                                             disabled={!!isCheckoutLoading}
                                             className="w-full bg-white text-secondary hover:bg-slate-50 font-black py-3 rounded-2xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 relative z-10"
                                         >
-                                            {isCheckoutLoading === 'full' ? <Loader2 className="w-4 h-4 animate-spin text-secondary" /> : "Unlock Full App"}
+                                            {isCheckoutLoading === 'full' ? <Loader2 className="w-4 h-4 animate-spin text-secondary" /> : "Unlock Full Diet Plan"}
                                         </button>
                                     </div>
                                 </div>
