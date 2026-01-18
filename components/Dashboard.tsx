@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AIResponse, Meal, MonthPlan } from '../types';
-import { Lock, Download, Droplets, Flame, Activity, Zap, ChevronDown, ChevronUp, ShoppingCart, Utensils, Leaf, AlertTriangle, Speaker, Pill, ClipboardList, Wallet, CloudSun, Microwave, Repeat, User, FileText, X, ExternalLink, Loader2, CheckCircle } from 'lucide-react';
+import { Lock, Download, Droplets, Flame, Activity, Zap, ChevronDown, ChevronUp, ShoppingCart, Utensils, Leaf, AlertTriangle, Speaker, Pill, ClipboardList, Wallet, CloudSun, Microwave, Repeat, User, FileText, X, ExternalLink, Loader2, CheckCircle, ChevronRight, Shield } from 'lucide-react';
 import { generatePDF } from '../services/pdfService';
 import { trackEvent } from '../services/supabaseClient'; // Import Tracking
 import { getCheckoutUrl } from '../services/paymentService'; // Import Payment Service
@@ -191,6 +191,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     const [viewMode, setViewMode] = useState<'meals' | 'groceries'>('meals');
     const [waterConsumed, setWaterConsumed] = useState(0);
     const [isCheckoutLoading, setIsCheckoutLoading] = useState<string | null>(null); // NEW: Track which tier is loading
+    const [selectedPlan, setSelectedPlan] = useState<'1month' | 'full'>('full');
 
     // NEW: State for PDF Confirmation Modal
     const [showPdfConfirm, setShowPdfConfirm] = useState(false);
@@ -717,67 +718,159 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                                 <div className="text-center mb-6">
                                     <div className="flex items-center justify-center gap-2 mb-1">
-                                        <span className="bg-secondary text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Limited Offer</span>
-                                        <span className="text-secondary font-mono font-bold bg-secondary/10 px-2 rounded text-xs">{formatTime(timeLeft)}</span>
+                                        <span className="bg-indigo-500/20 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-[0_0_15px_rgba(99,102,241,0.3)] uppercase tracking-wider border border-indigo-500/30">Limited Offer</span>
+                                        <span className="text-indigo-300 font-mono font-bold bg-indigo-500/10 px-2 rounded text-xs border border-indigo-500/10 animate-pulse">{formatTime(timeLeft)}</span>
                                     </div>
-                                    <h3 className="text-2xl font-black tracking-tight">Unlock Your Transformation</h3>
-                                    <p className="text-slate-400 text-sm font-medium">Choose your roadmap to success.</p>
+                                    <h3 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm">Unlock Your Transformation</h3>
+                                    <p className="text-slate-400 text-sm font-medium mt-1">Choose your protocol. Start your journey.</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* TIER 1: 1 Month */}
-                                    <div className="bg-slate-800/50 p-5 rounded-3xl border border-slate-700 hover:border-slate-500 transition-all group flex flex-col justify-between">
+                                <div className="flex justify-center mb-8">
+                                    <div className="bg-black/40 backdrop-blur-md p-1 rounded-full flex relative w-72 h-14 border border-white/5 ring-1 ring-white/5 shadow-2xl">
+                                        <div
+                                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full shadow-[0_4px_12px_rgba(79,70,229,0.4)] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${selectedPlan === 'full' ? 'left-[calc(50%+2px)]' : 'left-1'
+                                                }`}
+                                        />
+                                        <button
+                                            onClick={() => setSelectedPlan('1month')}
+                                            className={`flex-1 relative z-10 text-xs font-bold rounded-full transition-colors flex items-center justify-center gap-2 ${selectedPlan === '1month' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                                }`}
+                                        >
+                                            1 Month
+                                        </button>
+                                        <button
+                                            onClick={() => setSelectedPlan('full')}
+                                            className={`flex-1 relative z-10 text-xs font-bold rounded-full transition-colors flex items-center justify-center gap-2 ${selectedPlan === 'full' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                                }`}
+                                        >
+                                            3 Months
+                                            {selectedPlan !== 'full' && (
+                                                <span className="flex h-2 w-2 relative">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="max-w-md mx-auto relative min-h-[460px]">
+                                    {/* TIER 1: 1-Month Kickstart (Shown when '1month' is selected) */}
+                                    <div
+                                        className={`bg-slate-900/60 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl transition-all duration-500 ease-out absolute inset-0 flex flex-col justify-between shadow-2xl ${selectedPlan === '1month'
+                                            ? 'opacity-100 scale-100 z-20 pointer-events-auto'
+                                            : 'opacity-0 scale-95 z-10 pointer-events-none'
+                                            }`}
+                                    >
                                         <div>
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="p-2 bg-slate-700 rounded-xl">
-                                                    <Utensils className="w-5 h-5 text-slate-300" />
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                                                    <Utensils className="w-6 h-6 text-indigo-400" />
                                                 </div>
-                                                <span className="text-2xl font-black">$9.99</span>
+                                                <div className="text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-3xl font-black text-white">$9.99</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">/ plan</div>
+                                                </div>
                                             </div>
-                                            <h4 className="text-lg font-bold text-left mb-2">1-Month Kickstart Diet</h4>
-                                            <ul className="text-left space-y-2 mb-6 text-xs text-slate-400 font-medium">
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 30-Day Diet Plan</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Easy Shopping List</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Downloadable Guide</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Start Burning Fat Fast</li>
-                                            </ul>
+
+                                            <h4 className="text-xl font-bold text-left mb-2 text-white">1-Month Kickstart</h4>
+                                            <p className="text-xs text-slate-400 mb-6 text-left leading-relaxed">Perfect for a quick reset. Get a custom meal plan and start seeing results in 30 days.</p>
+
+                                            <div className="space-y-4 mb-4">
+                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
+                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                                                    <span className="text-sm text-slate-300 font-medium">Custom Meal Plans</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
+                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                                                    <span className="text-sm text-slate-300 font-medium">Done-For-You Shopping Lists</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-backwards">
+                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                                                    <span className="text-sm text-slate-300 font-medium">Precision Macro Tracking</span>
+                                                </div>
+                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-400 fill-mode-backwards">
+                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
+                                                    <span className="text-sm text-slate-300 font-medium">Calorie Counts per Meal</span>
+                                                </div>
+                                            </div>
                                         </div>
+
                                         <button
                                             onClick={() => handleUnlockClick('1month')}
                                             disabled={!!isCheckoutLoading}
-                                            className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                                         >
-                                            {isCheckoutLoading === '1month' ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unlock Kickstart Diet"}
+                                            {isCheckoutLoading === '1month' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
                                         </button>
                                     </div>
 
-                                    {/* TIER 2: 3 Months */}
-                                    <div className="bg-secondary p-5 rounded-3xl border border-secondary shadow-lg shadow-secondary/20 hover:scale-[1.02] transition-all group flex flex-col justify-between relative overflow-hidden">
-                                        <div className="absolute top-3 right-3 bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">Best Value</div>
-                                        <div className="relative z-10 pt-6">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="p-2 bg-white/20 rounded-xl">
-                                                    <Zap className="w-5 h-5 text-white fill-white" />
-                                                </div>
-                                                <span className="text-2xl font-black">$19.99</span>
+                                    {/* TIER 2: 3-Months (Shown when 'full' is selected) */}
+                                    <div
+                                        className={`bg-gradient-to-b from-[#ff6b00] to-[#e65100] p-[1px] rounded-[2rem] shadow-[0_20px_40px_-10px_rgba(255,107,0,0.3)] transition-all duration-500 ease-out absolute inset-0 ${selectedPlan === 'full'
+                                            ? 'opacity-100 scale-105 z-20 pointer-events-auto'
+                                            : 'opacity-0 scale-95 translate-x-8 z-10 pointer-events-none'
+                                            }`}
+                                    >
+                                        <div className="bg-slate-900/90 h-full w-full rounded-[2rem] p-6 relative overflow-hidden backdrop-blur-xl flex flex-col justify-between">
+                                            {/* Glowing Aurora Background */}
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                                            <div className="absolute top-0 right-0 bg-gradient-to-l from-orange-500 to-amber-500 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-2xl uppercase tracking-wider shadow-lg">
+                                                Best Value
                                             </div>
-                                            <h4 className="text-lg font-bold text-left mb-2">3-Month Diet Roadmap</h4>
-                                            <ul className="text-left space-y-2 mb-6 text-xs text-white/80 font-medium">
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> 90-Day Unlocked Access</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Weekly Progress Adjustments</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Complete 12-Week Guide</li>
-                                                <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5" /> Keep The Weight Off</li>
-                                            </ul>
+
+                                            <div>
+                                                <div className="flex justify-between items-start mb-6 pt-2 relative z-10">
+                                                    <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-2xl border border-orange-500/20">
+                                                        <Zap className="w-6 h-6 text-orange-400" />
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-xs text-slate-500 line-through font-medium mb-0.5">$199</span>
+                                                            <span className="text-3xl font-black text-white tracking-tight">$19.99</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">/ plan</div>
+                                                    </div>
+                                                </div>
+
+                                                <h4 className="text-xl font-black text-left mb-2 text-white leading-tight">The Ultimate Transformation Protocol</h4>
+                                                <p className="text-xs text-orange-200/80 mb-6 text-left font-medium">Complete 12-week roadmap. Doctor-verified safety. Maximum results.</p>
+
+                                                <div className="space-y-4 mb-4 relative z-10">
+                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
+                                                        <div className="p-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg shadow-orange-500/40"><CheckCircle className="w-3.5 h-3.5 text-white" /></div>
+                                                        <span className="text-sm text-white font-bold">Everything in 30-Day Plan</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
+                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
+                                                        <span className="text-sm text-slate-200 font-medium">Weekly Phase Adjustments</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-backwards">
+                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
+                                                        <span className="text-sm text-slate-200 font-medium">Doctor-Verified Safety Protocols</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-400 fill-mode-backwards">
+                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
+                                                        <span className="text-sm text-slate-200 font-medium">Detailed Recipe Guide</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleUnlockClick('full')}
+                                                disabled={!!isCheckoutLoading}
+                                                className="w-full bg-gradient-to-r from-[#ff6b00] to-[#ff8f00] hover:from-[#ff8f00] hover:to-[#ffa726] text-white font-black py-4 rounded-xl transition-all shadow-[0_10px_20px_-5px_rgba(255,107,0,0.4)] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 relative z-20 group"
+                                            >
+                                                {isCheckoutLoading === 'full' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
+                                                {!isCheckoutLoading && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleUnlockClick('full')}
-                                            disabled={!!isCheckoutLoading}
-                                            className="w-full bg-white text-secondary hover:bg-slate-50 font-black py-3 rounded-2xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 relative z-10"
-                                        >
-                                            {isCheckoutLoading === 'full' ? <Loader2 className="w-4 h-4 animate-spin text-secondary" /> : "Unlock Full Diet Plan"}
-                                        </button>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>

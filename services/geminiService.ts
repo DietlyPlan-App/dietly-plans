@@ -495,11 +495,18 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     // ROUND 8: Prevent Prompt Injection via Name
     stats.name = sanitize(stats.name || "").replace(/[^a-zA-Z0-9 ]/g, "");
 
-    // --- DETECT HIDDEN CONDITIONS ---
+    // --- SAFETY WATCHDOG ---
     const combinedHealthText = (stats.medications + " " + stats.allergies + " " + (stats.conditions || "")).toLowerCase();
+
+    // DEBUG: Log the health text to ensure inputs are arriving
+    console.log("🚑 GEMINI SERVICE: Scanning Health Text:", combinedHealthText);
+
+    const isRenal = /kidney|renal|ckd|dialysis/i.test(combinedHealthText);
+    const isDiabetes = /diabetes|diabetic|insulin|metformin/i.test(combinedHealthText);
     const isHistamineIntolerant = /histamine|dao|mast cell|mcas/i.test(combinedHealthText);
     const isNoGallbladder = /gallbladder|cholecystectomy|bile/i.test(combinedHealthText);
-    const isRenal = /kidney|renal|ckd|dialysis/i.test(combinedHealthText);
+
+    if (isRenal) console.warn("⚠️ CRITICAL: RENAL CONDITION DETECTED. ACTIVATING SAFETY LOCKS.");
     const isGeriatric = stats.age > 65;
     const isGout = /gout|uric|hyperuricemia/i.test(combinedHealthText);
     const isHypertension = /pressure|hypertension|dash|blood pressure/i.test(combinedHealthText);
@@ -903,7 +910,15 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // ROUND 8: USE SAFE WATER
         let finalWater = safeWater;
         if (m1Result.climateAnalysis?.isHot && !isRenal) finalWater += 0.3; // Don't add heat water if Renal
-        const finalTargetLitres = Math.min(parseFloat(finalWater.toFixed(1)), isRenal ? 1.5 : 5.5);
+
+        // --- RENAL HARD LOCK (FINAL LINE OF DEFENSE) ---
+        // Force 1.5L Cap regardless of heat, activity, or anything else if Renal is detected.
+        let finalTargetLitres = Math.min(parseFloat(finalWater.toFixed(1)), isRenal ? 1.5 : 5.5);
+
+        if (isRenal && finalTargetLitres > 1.5) {
+            console.error("⛔ SAFETY INTERVENTION: Resetting Water to 1.5L for Renal Safety.");
+            finalTargetLitres = 1.5;
+        }
 
         // REMEDIATION: ELECTROLYTE BLIND SPOT
         // Trigger if High Volume (>3L) OR if Athlete/Active in Heat (even if volume is lower)

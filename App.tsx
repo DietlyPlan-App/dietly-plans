@@ -34,50 +34,74 @@ const App: React.FC = () => {
   // Track if we already logged login to prevent double-firing in StrictMode
   const loginLoggedRef = useRef(false);
 
-  // 1. Check for Active Session on Load
+  // 1. Session Managament & Restoration Logic
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Handle Session Updates
+    const handleSessionStart = async (session: any) => {
       setSession(session);
       if (session) {
+        // Check if we have PENDING WIZARD DATA (User just logged in after filling form)
+        const pendingDataRaw = safeLocalStorage.getItem('dietly_pending_wizard_data');
+        if (pendingDataRaw) {
+          try {
+            const pendingStats = JSON.parse(pendingDataRaw);
+            console.log("Found pending wizard data, resuming generation...", pendingStats);
+            safeLocalStorage.removeItem('dietly_pending_wizard_data'); // Clear it
+
+            // Resume Generation immediately with the NEW data
+            // We call the handler directly. Since 'session' is valid, it will proceed.
+            // We use the stats from storage, not any stale closure state.
+            await handleWizardComplete(pendingStats, session);
+
+            return; // EXIT EARLY: Do NOT fetch old DB data
+          } catch (e) {
+            console.error("Failed to parse pending data", e);
+          }
+        }
+
+        // If no pending data, Fetch from DB as normal
         fetchUserData(session.user.id);
+
         if (!loginLoggedRef.current) {
           trackEvent(session.user.id, 'session_restored', { method: 'auto' });
           loginLoggedRef.current = true;
-        }
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (session) {
-        fetchUserData(session.user.id);
-        setShowAuthModal(false); // Close modal on successful auth logic
-
-        if (event === 'SIGNED_IN') {
-          trackEvent(session.user.id, 'user_login', { method: 'auth_change' });
         }
       } else {
         setPlan(null); // Clear plan on logout
         setIsPaid(false);
         setCurrentStep('wizard');
       }
+    };
+
+    // Initialize
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSessionStart(session);
     });
 
-    // CHECK FOR PAYMENT SUCCESS RETURN
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+        handleSessionStart(session);
+      }
+
+      if (event === 'SIGNED_IN' && session) {
+        setShowAuthModal(false);
+        trackEvent(session.user.id, 'user_login', { method: 'auth_change' });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CHECK FOR PAYMENT SUCCESS RETURN
+  useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     if (query.get('success') === 'true') {
       setShowPaymentSuccess(true);
       // Clean URL
       window.history.replaceState({}, document.title, "/");
-
-      // SECURITY FIX: Removed optimistic unlocking. 
-      // We now rely purely on the Webhook -> DB update to set 'isPaid'.
-      // This prevents users from bypassing the paywall by simply adding ?success=true
     }
-
-    return () => subscription.unsubscribe();
   }, []);
 
   // PERSISTENCE EFFECT
@@ -128,9 +152,15 @@ const App: React.FC = () => {
   };
 
   // 3. Generate & Save to Supabase (PLUS TRACKING)
-  const handleWizardComplete = async (stats: UserStats) => {
+  const handleWizardComplete = async (stats: UserStats, explicitSession: any = null) => {
+    // Determine active session (State or Explicit Argument)
+    const activeSession = explicitSession || session;
+
     // --- AUTH INTERCEPT ---
-    if (!session) {
+    if (!activeSession) {
+      // SAVE DATA FOR POST-LOGIN RESUME
+      console.log("Saving wizard data for post-login resume...");
+      safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
       setShowAuthModal(true);
       return;
     }
@@ -139,7 +169,7 @@ const App: React.FC = () => {
     setLoadingText("Starting Analysis...");
 
     // TRACKING: Log User Inputs (via the start of generation)
-    trackEvent(session.user.id, 'generation_started', { inputs: stats });
+    trackEvent(activeSession.user.id, 'generation_started', { inputs: stats });
 
     try {
       // Generate Logic
@@ -158,7 +188,7 @@ const App: React.FC = () => {
       const { error } = await supabase
         .from('plans')
         .upsert({
-          user_id: session.user.id,
+          user_id: activeSession.user.id,
           data: generatedPlan,
           updated_at: new Date()
         });
@@ -166,17 +196,17 @@ const App: React.FC = () => {
       if (error) console.error("Failed to save to Cloud:", error);
 
       // B. Save to History (Insert - Permanent Record)
-      saveHistory(session.user.id, generatedPlan);
+      saveHistory(activeSession.user.id, generatedPlan);
 
       // C. Log Success
-      trackEvent(session.user.id, 'generation_complete', {
+      trackEvent(activeSession.user.id, 'generation_complete', {
         calories: generatedPlan.userStats.tdee,
         goal: generatedPlan.userStats.goal
       });
 
     } catch (error) {
       console.error(error);
-      trackEvent(session.user.id, 'generation_failed', { error: String(error) });
+      if (activeSession) trackEvent(activeSession.user.id, 'generation_failed', { error: String(error) });
       alert("Failed to generate plan. Please try again.");
       setCurrentStep('wizard');
     }
