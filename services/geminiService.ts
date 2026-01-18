@@ -945,7 +945,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         const fallback = getDynamicFallback(stats, calorieTarget, macroTargets);
 
         return {
-            userStats: { ...stats, bmr, tdee, bmi, waterTargetLitres: baseWater, needsElectrolytes: false },
+            userStats: { ...stats, bmr, tdee, bmi, waterTargetLitres: safeWater, needsElectrolytes: false },
             safetyVerification: fallback.safetyVerification,
             medicationAnalysis: fallback.medicationAnalysis,
             climateAnalysis: fallback.climateAnalysis,
