@@ -196,6 +196,9 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     // NEW: State for PDF Confirmation Modal
     const [showPdfConfirm, setShowPdfConfirm] = useState(false);
 
+    // NEW: State for Paywall Expansion (V2 Refinement)
+    const [isPaywallExpanded, setIsPaywallExpanded] = useState(true);
+
     // COUNTDOWN TIMER
     const [timeLeft, setTimeLeft] = useState(() => {
         const saved = localStorage.getItem('intro_timer');
@@ -708,172 +711,212 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                 </div>
             </div>
 
-            {/* Paywall CTA - Dual Tier Redesign */}
+            {/* Paywall CTA - V4 Light Mode (Clean, Functional, Interaction Blocked) */}
             {
                 !isPaid && (
-                    <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-light via-light/95 to-transparent z-50 flex justify-center pb-8 md:pb-12 pointer-events-none">
-                        <div className="bg-dark text-white p-2 rounded-[2.5rem] shadow-2xl shadow-secondary/30 max-w-4xl w-full text-center relative overflow-hidden ring-4 ring-white pointer-events-auto">
-                            <div className="bg-slate-900 rounded-[2.2rem] p-6 relative z-10">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <>
+                        {/* 1. Backdrop Overlay (Blocks interaction when expanded) */}
+                        <div
+                            className={`fixed inset-0 z-[45] bg-slate-900/20 backdrop-blur-[2px] transition-opacity duration-500 cursor-default ${isPaywallExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                            onClick={(e) => {
+                                e.stopPropagation(); // Stop event bubbling
+                                setIsPaywallExpanded(false);
+                            }}
+                        />
 
-                                <div className="text-center mb-6">
-                                    <div className="flex items-center justify-center gap-2 mb-1">
-                                        <span className="bg-indigo-500/20 text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded shadow-[0_0_15px_rgba(99,102,241,0.3)] uppercase tracking-wider border border-indigo-500/30">Limited Offer</span>
-                                        <span className="text-indigo-300 font-mono font-bold bg-indigo-500/10 px-2 rounded text-xs border border-indigo-500/10 animate-pulse">{formatTime(timeLeft)}</span>
+                        {/* 2. Main Paywall Container */}
+                        <div className={`fixed bottom-0 left-0 right-0 z-50 flex justify-center items-end safe-area-bottom pointer-events-none transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isPaywallExpanded ? 'pb-0 md:pb-6' : 'pb-6'}`}>
+
+                            <div
+                                className={`
+                                    relative overflow-hidden pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
+                                    bg-white text-slate-900 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)]
+                                    ${isPaywallExpanded
+                                        ? 'w-full md:w-auto md:max-w-md rounded-t-[2rem] md:rounded-[2.5rem] pb-safe ring-1 ring-black/5'
+                                        : 'w-[96%] md:w-[90%] max-w-sm rounded-[2rem] md:rounded-[2.5rem] transform translate-y-0 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ring-1 ring-black/5'}
+                                `}
+                                onClick={() => !isPaywallExpanded && setIsPaywallExpanded(true)} // Entire bar is clickable when collapsed
+                            >
+
+                                {/* A. COLLAPSED STATE (Clean Light Mode Pill) */}
+                                <div className={`flex items-center justify-between gap-6 px-6 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isPaywallExpanded ? 'max-h-0 opacity-0 pointer-events-none py-0' : 'max-h-[80px] opacity-100 py-4'}`}>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                                            <span className="text-sm font-bold text-slate-900 tracking-tight">Unlock Your Plan</span>
+                                        </div>
+                                        <span className="text-[11px] font-medium text-slate-500">Offer expires in {formatTime(timeLeft)}</span>
                                     </div>
-                                    <h3 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-indigo-100 to-indigo-300 drop-shadow-sm">Unlock Your Transformation</h3>
-                                    <p className="text-slate-400 text-sm font-medium mt-1">Choose your protocol. Start your journey.</p>
+                                    <button
+                                        className="bg-slate-900 text-white px-5 py-2 rounded-full font-bold text-xs shadow-lg shadow-slate-900/20"
+                                    >
+                                        View Offer
+                                    </button>
                                 </div>
 
-                                <div className="flex justify-center mb-8">
-                                    <div className="bg-black/40 backdrop-blur-md p-1 rounded-full flex relative w-72 h-14 border border-white/5 ring-1 ring-white/5 shadow-2xl">
-                                        <div
-                                            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full shadow-[0_4px_12px_rgba(79,70,229,0.4)] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${selectedPlan === 'full' ? 'left-[calc(50%+2px)]' : 'left-1'
-                                                }`}
-                                        />
-                                        <button
-                                            onClick={() => setSelectedPlan('1month')}
-                                            className={`flex-1 relative z-10 text-xs font-bold rounded-full transition-colors flex items-center justify-center gap-2 ${selectedPlan === '1month' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                                }`}
-                                        >
-                                            1 Month
-                                        </button>
-                                        <button
-                                            onClick={() => setSelectedPlan('full')}
-                                            className={`flex-1 relative z-10 text-xs font-bold rounded-full transition-colors flex items-center justify-center gap-2 ${selectedPlan === 'full' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                                                }`}
-                                        >
-                                            3 Months
-                                            {selectedPlan !== 'full' && (
-                                                <span className="flex h-2 w-2 relative">
-                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                {/* B. EXPANDED STATE CONTENT */}
+                                <div className={`relative z-10 flex flex-col justify-end md:justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isPaywallExpanded ? 'max-h-[1200px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 translate-y-4 pointer-events-none'}`}>
+
+                                    {/* Minimize Button */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setIsPaywallExpanded(false); }}
+                                        className="absolute top-4 right-4 z-40 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                                    >
+                                        <ChevronDown className="w-5 h-5" />
+                                    </button>
+
+                                    <div className="px-5 pt-8 pb-6 md:p-8">
+                                        <div className="text-center mb-8">
+                                            <div className="inline-flex items-center gap-2 mb-3 bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                                 </span>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="max-w-md mx-auto relative min-h-[460px]">
-                                    {/* TIER 1: 1-Month Kickstart (Shown when '1month' is selected) */}
-                                    <div
-                                        className={`bg-slate-900/60 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl transition-all duration-500 ease-out absolute inset-0 flex flex-col justify-between shadow-2xl ${selectedPlan === '1month'
-                                            ? 'opacity-100 scale-100 z-20 pointer-events-auto'
-                                            : 'opacity-0 scale-95 z-10 pointer-events-none'
-                                            }`}
-                                    >
-                                        <div>
-                                            <div className="flex justify-between items-start mb-6">
-                                                <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
-                                                    <Utensils className="w-6 h-6 text-indigo-400" />
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="flex flex-col items-end">
-                                                        <span className="text-3xl font-black text-white">$9.99</span>
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">/ plan</div>
-                                                </div>
-                                            </div>
-
-                                            <h4 className="text-xl font-bold text-left mb-2 text-white">1-Month Kickstart</h4>
-                                            <p className="text-xs text-slate-400 mb-6 text-left leading-relaxed">Perfect for a quick reset. Get a custom meal plan and start seeing results in 30 days.</p>
-
-                                            <div className="space-y-4 mb-4">
-                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
-                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
-                                                    <span className="text-sm text-slate-300 font-medium">Custom Meal Plans</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
-                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
-                                                    <span className="text-sm text-slate-300 font-medium">Done-For-You Shopping Lists</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-backwards">
-                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
-                                                    <span className="text-sm text-slate-300 font-medium">Precision Macro Tracking</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-400 fill-mode-backwards">
-                                                    <div className="p-1 rounded-full bg-emerald-500/10"><CheckCircle className="w-4 h-4 text-emerald-500" /></div>
-                                                    <span className="text-sm text-slate-300 font-medium">Calorie Counts per Meal</span>
-                                                </div>
+                                                <span className="text-red-600/80 font-bold text-[10px] uppercase tracking-wider">Offer Expiring</span>
+                                                <span className="text-red-600 font-mono font-bold text-xs min-w-[44px] text-left">{formatTime(timeLeft)}</span>
                                             </div>
                                         </div>
 
-                                        <button
-                                            onClick={() => handleUnlockClick('1month')}
-                                            disabled={!!isCheckoutLoading}
-                                            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold py-4 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                                        >
-                                            {isCheckoutLoading === '1month' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
-                                        </button>
-                                    </div>
-
-                                    {/* TIER 2: 3-Months (Shown when 'full' is selected) */}
-                                    <div
-                                        className={`bg-gradient-to-b from-[#ff6b00] to-[#e65100] p-[1px] rounded-[2rem] shadow-[0_20px_40px_-10px_rgba(255,107,0,0.3)] transition-all duration-500 ease-out absolute inset-0 ${selectedPlan === 'full'
-                                            ? 'opacity-100 scale-105 z-20 pointer-events-auto'
-                                            : 'opacity-0 scale-95 translate-x-8 z-10 pointer-events-none'
-                                            }`}
-                                    >
-                                        <div className="bg-slate-900/90 h-full w-full rounded-[2rem] p-6 relative overflow-hidden backdrop-blur-xl flex flex-col justify-between">
-                                            {/* Glowing Aurora Background */}
-                                            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                                            <div className="absolute top-0 right-0 bg-gradient-to-l from-orange-500 to-amber-500 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-2xl uppercase tracking-wider shadow-lg">
-                                                Best Value
+                                        {/* Toggle Switch (Light Mode) */}
+                                        <div className="flex justify-center mb-8">
+                                            <div className="bg-slate-100 p-1 rounded-full flex relative w-full shadow-inner ring-1 ring-black/5">
+                                                <div
+                                                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full shadow-sm border border-black/5 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${selectedPlan === 'full' ? 'left-[calc(50%+2px)]' : 'left-1'
+                                                        }`}
+                                                />
+                                                <button
+                                                    onClick={() => { playPop(); setSelectedPlan('1month'); }}
+                                                    className={`flex-1 relative z-10 text-xs md:text-sm font-bold rounded-full transition-colors flex items-center justify-center gap-2 py-3 ${selectedPlan === '1month' ? 'text-slate-900' : 'text-slate-500'
+                                                        }`}
+                                                >
+                                                    1 Month
+                                                </button>
+                                                <button
+                                                    onClick={() => { playPop(); setSelectedPlan('full'); }}
+                                                    className={`flex-1 relative z-10 text-xs md:text-sm font-bold rounded-full transition-colors flex items-center justify-center gap-2 py-3 ${selectedPlan === 'full' ? 'text-slate-900' : 'text-slate-500'
+                                                        }`}
+                                                >
+                                                    3 Months
+                                                    {selectedPlan !== 'full' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                                                </button>
                                             </div>
+                                        </div>
 
-                                            <div>
-                                                <div className="flex justify-between items-start mb-6 pt-2 relative z-10">
-                                                    <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-2xl border border-orange-500/20">
-                                                        <Zap className="w-6 h-6 text-orange-400" />
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="flex flex-col items-end">
-                                                            <span className="text-xs text-slate-500 line-through font-medium mb-0.5">$199</span>
-                                                            <span className="text-3xl font-black text-white tracking-tight">$19.99</span>
-                                                        </div>
-                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">/ plan</div>
-                                                    </div>
-                                                </div>
+                                        {/* Dynamic Content Area */}
+                                        <div className="relative w-full transition-all duration-300">
 
-                                                <h4 className="text-xl font-black text-left mb-2 text-white leading-tight">The Ultimate Transformation Protocol</h4>
-                                                <p className="text-xs text-orange-200/80 mb-6 text-left font-medium">Complete 12-week roadmap. Doctor-verified safety. Maximum results.</p>
-
-                                                <div className="space-y-4 mb-4 relative z-10">
-                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-100 fill-mode-backwards">
-                                                        <div className="p-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 shadow-lg shadow-orange-500/40"><CheckCircle className="w-3.5 h-3.5 text-white" /></div>
-                                                        <span className="text-sm text-white font-bold">Everything in 30-Day Plan</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-backwards">
-                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
-                                                        <span className="text-sm text-slate-200 font-medium">Weekly Phase Adjustments</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-300 fill-mode-backwards">
-                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
-                                                        <span className="text-sm text-slate-200 font-medium">Doctor-Verified Safety Protocols</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-2 duration-500 delay-400 fill-mode-backwards">
-                                                        <div className="p-1 rounded-full bg-white/10 border border-white/5"><CheckCircle className="w-3.5 h-3.5 text-orange-400" /></div>
-                                                        <span className="text-sm text-slate-200 font-medium">Detailed Recipe Guide</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => handleUnlockClick('full')}
-                                                disabled={!!isCheckoutLoading}
-                                                className="w-full bg-gradient-to-r from-[#ff6b00] to-[#ff8f00] hover:from-[#ff8f00] hover:to-[#ffa726] text-white font-black py-4 rounded-xl transition-all shadow-[0_10px_20px_-5px_rgba(255,107,0,0.4)] active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 relative z-20 group"
+                                            {/* TIER 1: 1-Month (Clean White) */}
+                                            <div
+                                                className={`bg-white p-6 rounded-[2rem] border border-slate-200 shadow-xl transition-all duration-500 ease-out flex flex-col justify-between ${selectedPlan === '1month'
+                                                    ? 'relative opacity-100 scale-100 z-20 pointer-events-auto'
+                                                    : 'absolute top-0 left-0 w-full opacity-0 scale-95 z-10 pointer-events-none'
+                                                    }`}
                                             >
-                                                {isCheckoutLoading === 'full' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
-                                                {!isCheckoutLoading && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-                                            </button>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start mb-6">
+                                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                            <Utensils className="w-6 h-6 text-slate-400" />
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="text-3xl font-black text-slate-900 tracking-tight block">$9.99</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">/ plan</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <h4 className="text-xl font-bold text-slate-900 mb-2">1-Month Kickstart Plan</h4>
+                                                    <p className="text-xs text-slate-500 mb-6 leading-relaxed">Perfect for a quick reset. Get a custom meal plan and start seeing results in 30 days.</p>
+
+                                                    <div className="space-y-4">
+                                                        {[
+                                                            "Custom Meal Plans",
+                                                            "Done-For-You Shopping Lists",
+                                                            "Precision Macro Tracking",
+                                                            "Calorie Counts per Meal"
+                                                        ].map((item, i) => (
+                                                            <div key={i} className="flex items-center gap-3">
+                                                                <CheckCircle className="w-4 h-4 text-slate-400" />
+                                                                <span className="text-sm text-slate-600 font-medium">{item}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleUnlockClick('1month')}
+                                                    disabled={!!isCheckoutLoading}
+                                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-slate-900/10 flex items-center justify-center gap-2 disabled:opacity-50 mt-4 active:scale-95"
+                                                >
+                                                    {isCheckoutLoading === '1month' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
+                                                </button>
+                                            </div>
+
+                                            {/* TIER 2: 3-Months (Best Value - Orange Accent) */}
+                                            <div
+                                                className={`bg-gradient-to-b from-orange-500 to-white p-[1px] rounded-[2rem] shadow-2xl transition-all duration-500 ease-out ${selectedPlan === 'full'
+                                                    ? 'relative opacity-100 scale-100 z-20 pointer-events-auto'
+                                                    : 'absolute top-0 left-0 w-full opacity-0 scale-95 translate-x-4 z-10 pointer-events-none'
+                                                    }`}
+                                            >
+                                                <div className="bg-white h-full w-full rounded-[2rem] p-6 relative overflow-hidden flex flex-col justify-between">
+
+                                                    {/* Ribbon */}
+                                                    <div className="absolute top-0 right-0 bg-gradient-to-l from-orange-500 to-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl rounded-tr-[2rem] uppercase tracking-wider shadow-lg z-20">
+                                                        Best Value
+                                                    </div>
+
+                                                    <div className="flex-1 relative z-10">
+                                                        <div className="flex justify-between items-start mb-6">
+                                                            <div className="p-3 bg-orange-50 rounded-2xl border border-orange-100">
+                                                                <Zap className="w-6 h-6 text-orange-500" />
+                                                            </div>
+                                                            <div className="text-right">
+
+                                                                <span className="text-3xl font-black text-slate-900 tracking-tight block">$19.99</span>
+                                                                <span className="text-[10px] text-orange-600/80 font-bold uppercase tracking-wider">/ plan</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <h4 className="text-xl font-bold text-slate-900 mb-2">3-Month Diet Roadmap</h4>
+                                                        <p className="text-xs text-slate-500 mb-6 leading-relaxed">Complete 12-week roadmap. Doctor-verified safety. Maximum results.</p>
+
+                                                        <div className="space-y-4">
+                                                            {[
+                                                                { text: "Everything in 30-Day Plan", highlight: true },
+                                                                { text: "Weekly Phase Adjustments", highlight: true },
+                                                                { text: "Medical Safety Protocols Applied", highlight: false },
+                                                                { text: "Detailed Recipe Guide", highlight: false }
+                                                            ].map((feat, i) => (
+                                                                <div key={i} className="flex items-center gap-3">
+                                                                    <CheckCircle className={`w-4 h-4 ${feat.highlight ? 'text-orange-500' : 'text-slate-400'}`} />
+                                                                    <span className={`text-sm font-medium ${feat.highlight ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>{feat.text}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        onClick={() => handleUnlockClick('full')}
+                                                        disabled={!!isCheckoutLoading}
+                                                        className="relative w-full overflow-hidden bg-gradient-to-r from-orange-500 to-amber-500 hover:to-orange-400 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-orange-500/30 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 relative z-20 group mt-4"
+                                                    >
+                                                        {isCheckoutLoading === 'full' ? <Loader2 className="w-5 h-5 animate-spin" /> : "Get Instant Access"}
+                                                        {!isCheckoutLoading && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {/* Trust Signal */}
+                                        <div className="mt-6 flex justify-center items-center gap-2 opacity-60">
+                                            <Shield className="w-3 h-3 text-slate-400" />
+                                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SSL Secure Checkout</span>
+                                        </div>
+
                                     </div>
                                 </div>
-
                             </div>
                         </div>
-                    </div>
+                    </>
                 )
             }
 
