@@ -9,7 +9,7 @@ const OWNER_CONFIG = {
 };
 
 // --- MATH HELPERS (Advanced) ---
-const calculateBaseWater = (weightKg: number, activity: string, isBreastfeeding: boolean, age: number): number => {
+export const calculateBaseWater = (weightKg: number, activity: string, isBreastfeeding: boolean, age: number): number => {
     let base = 0;
 
     // 1. PEDIATRIC WATER (Holliday-Segar Rule) - Age < 18
@@ -40,7 +40,7 @@ const calculateBaseWater = (weightKg: number, activity: string, isBreastfeeding:
     return Math.min(parseFloat(base.toFixed(1)), 4.5);
 };
 
-const calculateBMR = (weightKg: number, heightCm: number, age: number, gender: string, meds: string): number => {
+export const calculateBMR = (weightKg: number, heightCm: number, age: number, gender: string, meds: string): number => {
     // MIFFLIN-ST JEOR (Gold Standard)
     let base = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
     const adjustment = gender === 'male' ? 5 : -161;
@@ -54,7 +54,7 @@ const calculateBMR = (weightKg: number, heightCm: number, age: number, gender: s
 };
 
 // SCHOFIELD EQUATION (WHO Standard for Pediatrics < 18)
-const calculatePediatricBMR = (weightKg: number, age: number, gender: string): number => {
+export const calculatePediatricBMR = (weightKg: number, age: number, gender: string): number => {
     if (gender === 'male') {
         if (age < 3) return (60.9 * weightKg) - 54;
         if (age < 10) return (22.7 * weightKg) + 495;
@@ -74,7 +74,7 @@ const calculateTDEE = (bmr: number, activity: string): number => {
 };
 
 // --- BIOLOGICAL MACRO CALCULATOR ---
-const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overrides: { isRenal: boolean, isGeriatric: boolean, isNoGallbladder: boolean, isDiabetic: boolean, isGLP1: boolean }): MacroSplit => {
+export const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overrides: { isRenal: boolean, isGeriatric: boolean, isNoGallbladder: boolean, isDiabetic: boolean, isGLP1: boolean }): MacroSplit => {
     // 1. MACRO SPLIT STRATEGY (Percentage Based)
     let pSplit = 0.30;
     let fSplit = 0.30;
@@ -188,7 +188,7 @@ const ALLERGY_MAP: Record<string, string[]> = {
     'seafood': ['fish', 'tuna', 'salmon', 'cod', 'tilapia', 'shrimp', 'crab', 'lobster']
 };
 
-const runSafetyWatchdog = (meal: Meal, allergies: string): Meal => {
+export const runSafetyWatchdog = (meal: Meal, allergies: string): Meal => {
     if (!allergies || allergies.length < 3) return meal;
 
     const userAllergies = allergies.toLowerCase().split(/,|;/).map(s => s.trim()).filter(s => s.length > 2);
@@ -230,7 +230,7 @@ const runSafetyWatchdog = (meal: Meal, allergies: string): Meal => {
 };
 
 // --- DYNAMIC FALLBACK SYSTEM (SAFE MODE) ---
-const getDynamicFallback = (stats: UserStats, calories: number, macros: MacroSplit): any => {
+export const getDynamicFallback = (stats: UserStats, calories: number, macros: MacroSplit): any => {
     const diet = stats.dietType.toLowerCase();
     const allergies = (stats.allergies + " " + stats.medications).toLowerCase();
 
@@ -242,7 +242,13 @@ const getDynamicFallback = (stats: UserStats, calories: number, macros: MacroSpl
     // 1. VEGAN / VEGETARIAN SAFEGUARD
     if (diet.includes('vegan') || diet.includes('vegetarian')) {
         baseProtein = "Tofu";
-        if (allergies.includes('soy')) baseProtein = "Lentils";
+        if (allergies.includes('soy')) {
+            baseProtein = "Lentils";
+            // FALLBACK FOR "IMPOSSIBLE COMPATIBILITY" (No Soy + No Legumes)
+            if (allergies.includes('legume') || allergies.includes('bean') || allergies.includes('lentil')) {
+                baseProtein = "Pea Protein Isolate & Hemp Seeds";
+            }
+        }
     }
 
     // 2. KETO SAFEGUARD
