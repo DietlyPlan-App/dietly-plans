@@ -1,0 +1,34 @@
+# Final Deployment Verification
+
+- [ ] Check `.env.local` and `README.md` for Live URL <!-- id: 0 -->
+- [ ] **Live Browser Test** <!-- id: 1 -->
+    - [ ] Launch Browser (Incognito) <!-- id: 2 -->
+    - [ ] Navigate to App URL <!-- id: 3 -->
+    - [ ] Verify Landing Page Load <!-- id: 4 -->
+    - [x] Initiate Login with `sohamdas7928@gmail.com` <!-- id: 5 -->
+    - [x] **USER ACTION REQUIRED**: Input OTP <!-- id: 6 -->
+    - [x] Verify Dashboard Access <!-- id: 7 -->
+    - [x] Verify Plan Generation (Free/Paid Tier check) <!-- id: 8 -->
+- [x] Update `repeated_inspection_results.md` with Live Test confirmation <!-- id: 9 -->
+- [ ] **Fresh Account Paywall Test** <!-- id: 10 -->
+    - [x] Login `v.e.g.re.yes.9@gmail.com` <!-- id: 11 -->
+    - [x] Input OTP (Wait for User) <!-- id: 12 -->
+    - [x] Run Wizard (if new user) <!-- id: 13 -->
+    - [x] Verify Paywall Visibility <!-- id: 14 -->
+- [x] **Paywall Redesign (Mobile UX)** <!-- id: 15 -->
+    - [x] Optimize Responsiveness (Safe Areas, Padding) <!-- id: 16 -->
+    - [x] Polish Visuals (Glassmorphism, Trust Signals) <!-- id: 17 -->
+- [x] **Paywall Refinement V2 (User Feedback)** <!-- id: 18 -->
+    - [x] Implement Collapse/Expand Mechanics <!-- id: 19 -->
+    - [x] Refactor 3-Month Plan Layout (Fix Spacing) <!-- id: 20 -->
+    - [x] Upgrade Card Color Palettes <!-- id: 21 -->
+- [x] **Paywall Visual Polish V3 (REVERTED)** <!-- id: 22 -->
+    - [x] Add Button Shimmer & Micro-anims (REVERTED) <!-- id: 23 -->
+    - [x] Enhance Glassmorphism (REVERTED) <!-- id: 24 -->
+    - [x] Refine Depth & Shadows (REVERTED) <!-- id: 25 -->
+- [x] **Paywall Redesign V4 (Light Mode & Fixes)** <!-- id: 26 -->
+    - [x] Switch to Light Mode Theme (White/Shadows) <!-- id: 27 -->
+    - [x] Implement Full Screen Click Blocker <!-- id: 28 -->
+    - [x] Make Collapsed Bar Fully Interactive <!-- id: 29 -->
+    - [x] Restore Historical Content (Plan Names & Points) <!-- id: 30 -->
+    - [x] Clarify Pricing Text (Change '/month' to '/ PLAN') <!-- id: 31 -->

@@ -391,7 +391,8 @@ const batchNextSchema: Schema = {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const cleanJson = (text: string): string => {
+const cleanJson = (text: string | undefined | null): string => {
+    if (!text) return "{}"; // Safety Fallback
     let cleaned = text.replace(/```json\n?|\n?```/g, "");
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');

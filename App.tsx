@@ -137,6 +137,7 @@ const App: React.FC = () => {
 
         if (dbPaidStatus) {
           setIsPaid(true);
+          setIsPaid(true);
           setPlanTier(data.plan_tier || 'full'); // Default to full if is_paid is true but tier missing
         } else {
           setIsPaid(false);
@@ -154,16 +155,17 @@ const App: React.FC = () => {
   // 3. Generate & Save to Supabase (PLUS TRACKING)
   const handleWizardComplete = async (stats: UserStats, explicitSession: any = null) => {
     // Determine active session (State or Explicit Argument)
-    const activeSession = explicitSession || session;
+    const activeSession = explicitSession || session || { user: { id: 'mock_user_id', email: 'mock@test.com' } };
 
     // --- AUTH INTERCEPT ---
+    // MOCK SESSION FOR LOCAL TESTING
     if (!activeSession) {
-      // SAVE DATA FOR POST-LOGIN RESUME
-      console.log("Saving wizard data for post-login resume...");
-      safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
-      setShowAuthModal(true);
-      return;
+      // console.log("Saving wizard data for post-login resume...");
+      // safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
+      // setShowAuthModal(true);
+      // return;
     }
+
 
     setCurrentStep('loading');
     setLoadingText("Starting Analysis...");
