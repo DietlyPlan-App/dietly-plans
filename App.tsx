@@ -3,8 +3,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import Wizard from './components/Wizard';
 import Dashboard from './components/Dashboard';
 import Auth from './components/Auth'; // Import Auth
+import { HistoryVault } from './components/HistoryVault'; // NEW: Vault UI
 import { generateMealPlan } from './services/geminiService';
-import { supabase, trackEvent, saveHistory } from './services/supabaseClient'; // Import Client & Tracking
+import { supabase, trackEvent, saveHistory, uploadPDF } from './services/supabaseClient'; // Import Client & Tracking
+import { generatePDFBlob } from './services/pdfService'; // NEW: Vault Blob Generator
 import { UserStats, AIResponse } from './types';
 import { Zap, LogOut, X, CheckCircle } from 'lucide-react';
 import { safeLocalStorage } from './src/utils/storageUtils';
@@ -30,6 +32,7 @@ const App: React.FC = () => {
   const [planTier, setPlanTier] = useState<'free' | '1month' | 'full'>('free');
   const [showAuthModal, setShowAuthModal] = useState(false); // New Modal State
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false); // Payment Success Modal
+  const [showHistory, setShowHistory] = useState(false); // NEW: History Vault Modal
 
   // Track if we already logged login to prevent double-firing in StrictMode
   const loginLoggedRef = useRef(false);
@@ -197,8 +200,19 @@ const App: React.FC = () => {
 
       if (error) console.error("Failed to save to Cloud:", error);
 
-      // B. Save to History (Insert - Permanent Record)
-      saveHistory(activeSession.user.id, generatedPlan);
+      // B. THE VAULT: Generate PDF Blob + Upload
+      let pdfUrl: string | undefined = undefined;
+      try {
+        const blob = await generatePDFBlob(generatedPlan);
+        const dateStr = new Date().toISOString().split('T')[0];
+        const uploadedUrl = await uploadPDF(activeSession.user.id, blob, dateStr);
+        if (uploadedUrl) pdfUrl = uploadedUrl;
+      } catch (pdfError) {
+        console.warn("Vault Backup Failed (Non-Critical):", pdfError);
+      }
+
+      // C. Save to History (Insert - Permanent Record)
+      await saveHistory(activeSession.user.id, generatedPlan, pdfUrl);
 
       // C. Log Success
       trackEvent(activeSession.user.id, 'generation_complete', {
@@ -246,10 +260,20 @@ const App: React.FC = () => {
         {session ? (
           <div className="flex gap-4">
             {currentStep === 'dashboard' && (
-              <button onClick={resetApp} className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
-                <Zap className="w-4 h-4 md:hidden" />
-                <span className="hidden sm:inline">New Plan</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1"
+                  title="My Plans"
+                >
+                  📂
+                  <span className="hidden sm:inline">History</span>
+                </button>
+                <button onClick={resetApp} className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+                  <Zap className="w-4 h-4 md:hidden" />
+                  <span className="hidden sm:inline">New Plan</span>
+                </button>
+              </>
             )}
             <button onClick={handleLogout} className="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
               <LogOut className="w-4 h-4" />
@@ -336,12 +360,15 @@ const App: React.FC = () => {
                 <X className="w-8 h-8" />
               </button>
               <Auth onLogin={() => {
-                // Session update in useEffect will handle closing
-                // But we also close here for immediate feedback
                 setShowAuthModal(false);
               }} isModal={true} />
             </div>
           </div>
+        )}
+
+        {/* HISTORY VAULT MODAL */}
+        {showHistory && session && (
+          <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} />
         )}
 
         {/* PAYMENT SUCCESS CELEBRATION */}

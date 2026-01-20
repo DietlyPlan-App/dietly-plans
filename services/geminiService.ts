@@ -379,10 +379,11 @@ const batch1Schema: Schema = {
         budgetStrategy: { type: Type.STRING },
         pantryTips: { type: Type.STRING },
         phaseName: { type: Type.STRING },
+        planTitle: { type: Type.STRING, description: "A creative, short title for this plan, e.g. 'Keto Shred v1' or 'Vegan Muscle Builder'. Max 4 words." },
         weekTemplate: { type: Type.ARRAY, items: daySchema },
         shoppingList: { type: Type.ARRAY, items: shoppingCategorySchema }
     },
-    required: ["safetyVerification", "phaseName", "weekTemplate", "shoppingList", "climateAnalysis", "budgetStrategy"]
+    required: ["safetyVerification", "planTitle", "phaseName", "weekTemplate", "shoppingList", "climateAnalysis", "budgetStrategy"]
 };
 
 const batchNextSchema: Schema = {
@@ -503,46 +504,85 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     stats.name = sanitize(stats.name || "").replace(/[^a-zA-Z0-9 ]/g, "");
 
     // --- SAFETY WATCHDOG ---
+    // --- SAFETY WATCHDOG ---
     const combinedHealthText = (stats.medications + " " + stats.allergies + " " + (stats.conditions || "")).toLowerCase();
 
     // DEBUG: Log the health text to ensure inputs are arriving
     console.log("🚑 GEMINI SERVICE: Scanning Health Text:", combinedHealthText);
 
-    const isRenal = /kidney|renal|ckd|dialysis/i.test(combinedHealthText);
-    const isDiabetes = /diabetes|diabetic|insulin|metformin/i.test(combinedHealthText);
-    const isHistamineIntolerant = /histamine|dao|mast cell|mcas/i.test(combinedHealthText);
-    const isNoGallbladder = /gallbladder|cholecystectomy|bile/i.test(combinedHealthText);
+    // HELPER: Context-Aware Detection (Negation Handling + Word Boundaries)
+    // Returns true if 'term' is found BUT NOT preceded by "no", "not", "without".
+    const containsCondition = (text: string, regex: RegExp): boolean => {
+        const match = text.match(regex);
+        if (!match) return false;
+
+        // Simple Negation Check (Look behind 20 chars for "no ", "negative for ", etc)
+        const index = match.index || 0;
+        const lookbehind = text.substring(Math.max(0, index - 25), index);
+        if (/no\b|not\b|negative|without/i.test(lookbehind)) {
+            console.log(`ℹ️ Negation Detected: Found '${match[0]}' but ignored due to context ('${lookbehind.trim()}').`);
+            return false;
+        }
+        return true;
+    };
+
+    // 1. RENAL FAILURE (CRITICAL REFACTOR)
+    // Must distinguish from "Adrenal" match and "Kidney Stones".
+    // "Renal" must be its own word, not part of "Adrenal".
+    // "Kidney" implies failure ONLY if context suggests failure (CKD, Dialysis) OR if generic "Kidney" is used without "Stone".
+
+    // Regex Explain:
+    // \bckd\b : 'ckd'
+    // \bdialysis\b : 'dialysis'
+    // \brenal\b : word 'renal' (excludes 'adrenal')
+    // kidney failure|kidney disease : explicit
+    const isRenalFailureRegex = /\bckd\b|\bdialysis\b|\brenal failure\b|\brenal disease\b|\bkidney failure\b|\bkidney disease\b/i;
+
+    // Legacy support: "Renal" or "Kidney" alone might imply failure, but we must protect against "Kidney Stone".
+    // We'll set a base flag, then refine it.
+    let isRenal = containsCondition(combinedHealthText, isRenalFailureRegex);
+
+    if (!isRenal) {
+        // Check for loose "renal" or "kidney" but EXCLUDE specific false positives
+        // Exclude: "Adrenal", "Kidney Stone", "Kidney Bean"
+        if (/\brenal\b/i.test(combinedHealthText) && !/adrenal/i.test(combinedHealthText)) isRenal = true;
+        if (/\bkidney\b/i.test(combinedHealthText) && !/stone|bean/i.test(combinedHealthText)) isRenal = true;
+    }
+
+    // 2. DIABETES (Negation Aware)
+    const isDiabetes = containsCondition(combinedHealthText, /\bdiabetes\b|\bdiabetic\b|\binsulin\b|\bmetformin\b/i);
+
+    const isHistamineIntolerant = containsCondition(combinedHealthText, /histamine|dao|mast cell|mcas/i);
+    const isNoGallbladder = containsCondition(combinedHealthText, /gallbladder|cholecystectomy|bile/i);
 
     if (isRenal) console.warn("⚠️ CRITICAL: RENAL CONDITION DETECTED. ACTIVATING SAFETY LOCKS.");
+
     const isGeriatric = stats.age > 65;
-    const isGout = /gout|uric|hyperuricemia/i.test(combinedHealthText);
-    const isHypertension = /pressure|hypertension|dash|blood pressure/i.test(combinedHealthText);
-
-    // ROUND 8 FIX: Apply Renal Water Cap AFTER detection
-
+    const isGout = containsCondition(combinedHealthText, /gout|uric|hyperuricemia/i);
+    const isHypertension = containsCondition(combinedHealthText, /pressure|hypertension|dash|blood pressure/i);
 
     // NEW CONDITIONS
-    const isBariatric = /sleeve|gastric|bypass|bariatric/i.test(combinedHealthText);
-    const isKidneyStones = /stone|oxalate/i.test(combinedHealthText);
-    const isThyroid = /thyroid|hypothyroid|hashimoto/i.test(combinedHealthText);
-    const isCeliac = /celiac|gluten|wheat/i.test(combinedHealthText);
-    const isPKU = /pku|phenylketonuria|phenylalanine/i.test(combinedHealthText);
-    const isG6PD = /g6pd|favism/i.test(combinedHealthText);
+    const isBariatric = containsCondition(combinedHealthText, /sleeve|gastric|bypass|bariatric/i);
+    const isKidneyStones = containsCondition(combinedHealthText, /stone|oxalate|nephrolithiasis/i); // Specific Stone Check
+    const isThyroid = containsCondition(combinedHealthText, /thyroid|hypothyroid|hashimoto/i);
+    const isCeliac = containsCondition(combinedHealthText, /celiac|gluten|wheat/i);
+    const isPKU = containsCondition(combinedHealthText, /pku|phenylketonuria|phenylalanine/i);
+    const isG6PD = containsCondition(combinedHealthText, /g6pd|favism/i);
 
     // ROUND 8: ANTIBIOTIC + PROBIOTIC
-    const isAntibiotic = /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i.test(combinedHealthText);
+    const isAntibiotic = containsCondition(combinedHealthText, /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i);
 
     // ROUND 11: CHEMICAL DRUG INTERACTIONS (FINAL AUDIT)
-    const isWarfarin = /warfarin|coumadin|jantoven|blood thinner/i.test(combinedHealthText);
-    const isMAOI = /maoi|nardil|parnate|marplan|selegiline/i.test(combinedHealthText);
-    const isGrapefruitSensitive = /statin|lipitor|zocor|simvastatin|atorvastatin|transplant|cyclosporine|nifedipine/i.test(combinedHealthText);
-    const isBisphosphonate = /fosamax|alendronate|boniva/i.test(combinedHealthText); // Needs separation from Calcium
+    const isWarfarin = containsCondition(combinedHealthText, /warfarin|coumadin|jantoven|blood thinner/i);
+    const isMAOI = containsCondition(combinedHealthText, /maoi|nardil|parnate|marplan|selegiline/i);
+    const isGrapefruitSensitive = containsCondition(combinedHealthText, /statin|lipitor|zocor|simvastatin|atorvastatin|transplant|cyclosporine|nifedipine/i);
+    const isBisphosphonate = containsCondition(combinedHealthText, /fosamax|alendronate|boniva/i);
 
     // REMEDIATION: ADVANCED DRUG DETECTION
-    const isDiabetic = /diabetes|metformin|insulin|glipizide|jardiance/i.test(combinedHealthText);
-    const isGLP1 = /ozempic|wegovy|mounjaro|semaglutide|saxenda/i.test(combinedHealthText);
-    const isLithium = /lithium|lithobid/i.test(combinedHealthText);
-    const isShiftWorker = /shift|night|graveyard|rotation/i.test(combinedHealthText);
+    const isDiabetic = isDiabetes; // Alias for consistency
+    const isGLP1 = containsCondition(combinedHealthText, /ozempic|wegovy|mounjaro|semaglutide|saxenda/i);
+    const isLithium = containsCondition(combinedHealthText, /lithium|lithobid/i);
+    const isShiftWorker = containsCondition(combinedHealthText, /shift|night|graveyard|rotation/i);
 
     // RULE 1: HISTAMINE OVERRIDES LEFTOVERS
     if (isHistamineIntolerant && stats.mealStrategy === 'leftovers') {
@@ -553,8 +593,21 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     // Fix absoluteFloor Scope
     const absoluteFloor = stats.gender === 'male' ? 1500 : 1200;
 
-    // ROUND 8: LATE BINDING RENAL CAP
+    // ROUND 8: LATE BINDING RENAL CAP & KIDNEY STONE FLUSH
     let safeWater = baseWater;
+
+    // A. KIDNEY STONE PROTOCOL (High Fluid Volume)
+    // Stones require dilution (3-4L/day). We aim for 3.0L minimum if detected.
+    if (isKidneyStones) {
+        if (safeWater < 3.0) {
+            safeWater = 3.0;
+            logAdjustment("Clinical Adjustment: Kidney Stone risk detected. Increasing hydration target to 3.0L to prevent crystallization.");
+        }
+    }
+
+    // B. RENAL FAILURE PROTOCOL (Fluid Restriction)
+    // Safety Priority: Renal Failure (Edema/Heart Failure Risk) > Kidney Stones.
+    // If user has BOTH, we MUST cap at 1.5L and rely on meds/diet for stones, not volume.
     if (isRenal) {
         safeWater = Math.min(safeWater, 1.5); // Hard Cap 1.5L
         logAdjustment("CRITICAL SAFETY: Renal Condition detected. Hard-capping fluid intake to 1.5L.");

@@ -5,6 +5,7 @@ import { Lock, Download, Droplets, Flame, Activity, Zap, ChevronDown, ChevronUp,
 import { generatePDF } from '../services/pdfService';
 import { trackEvent } from '../services/supabaseClient'; // Import Tracking
 import { getCheckoutUrl } from '../services/paymentService'; // Import Payment Service
+import { HistoryVault } from './HistoryVault';
 
 interface DashboardProps {
     plan: AIResponse;
