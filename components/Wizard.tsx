@@ -102,9 +102,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     if (step === 4) { // Just before Final Step
       const conditions = (formData.medications || "").toLowerCase() + " " + (formData.allergies || "").toLowerCase();
       const diet = (formData.dietType || "").toLowerCase();
+
       const isKeto = diet.includes('keto');
       const isNoGallbladder = conditions.includes('gallbladder') || conditions.includes('cholecystectomy');
-      const isRenal = conditions.includes('renal') || conditions.includes('kidney') || conditions.includes('ckd');
+
+      // FIX: Strict Regex to avoid "Adrenal" -> "Renal" false positive
+      const isRenal = /\brenal\b|\bkidney\b|\bckd\b/i.test(conditions) && !/adrenal/i.test(conditions);
+
       const isBariatric = conditions.includes('bariatric') || conditions.includes('gastric') || conditions.includes('bypass') || conditions.includes('sleeve');
       const isBatch = formData.mealStrategy === 'batch';
       const isOMAD = conditions.includes('omad') || conditions.includes('one meal');

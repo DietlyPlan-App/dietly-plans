@@ -15,5 +15,5 @@
     - [x] Modify `handleWizardComplete` to Upload + Save <!-- id: 12 -->
 - [x] **5. Verification** <!-- id: 13 -->
     - [x] Build Succeeds (`npm run build`) <!-- id: 14 -->
-    - [ ] Live Test: Generate Plan -> Verify Upload + Save <!-- id: 15 -->
-    - [ ] Open History -> Verify List and Restore <!-- id: 16 -->
+    - [x] Live Test: Generate Plan -> Verify Upload + Save <!-- id: 15 -->
+    - [x] Open History -> Verify List and Restore <!-- id: 16 -->
