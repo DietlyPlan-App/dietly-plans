@@ -110,7 +110,8 @@ export const fetchUserHistory = async (userId: string) => {
       date: row.created_at,
       title: row.full_data.plan?.planTitle || "Custom Diet Plan", // Fallback if no title
       pdfUrl: row.full_data.meta_pdf_url,
-      calories: row.full_data.plan?.weekTemplate?.[0]?.dailyMacros?.calories
+      calories: row.full_data.plan?.weekTemplate?.[0]?.dailyMacros?.calories,
+      plan: row.full_data.plan // Pass full plan for regeneration if needed
     }));
 
   } catch (e) {

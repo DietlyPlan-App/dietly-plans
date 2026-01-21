@@ -1,12 +1,15 @@
 
 import React, { useEffect, useState } from 'react';
 import { fetchUserHistory, supabase } from '../services/supabaseClient';
+import { generatePDF } from '../services/pdfService'; // Import PDF Generator
+import { AIResponse } from '../types';
 
 interface HistoryItem {
     date: string;
     title: string;
     pdfUrl?: string;
     calories?: number;
+    plan?: AIResponse; // Full plan data
 }
 
 interface HistoryVaultProps {
@@ -17,6 +20,7 @@ interface HistoryVaultProps {
 export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) => {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [generatingId, setGeneratingId] = useState<number | null>(null);
 
     useEffect(() => {
         const loadHistory = async () => {
@@ -26,6 +30,19 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
         };
         loadHistory();
     }, [userId]);
+
+    const handleRegenerate = async (plan: AIResponse, index: number) => {
+        setGeneratingId(index);
+        try {
+            // Generate and Download Client-Side
+            generatePDF(plan);
+        } catch (e) {
+            console.error("Regeneration failed", e);
+            alert("Failed to regenerate PDF.");
+        } finally {
+            setGeneratingId(null);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -100,10 +117,18 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                                             <span className="hidden sm:inline">Download</span>
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                         </a>
+                                    ) : item.plan ? (
+                                        <button
+                                            onClick={() => item.plan && handleRegenerate(item.plan, idx)}
+                                            disabled={generatingId === idx}
+                                            className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-slate-900/20 hover:bg-slate-700 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
+                                        >
+                                            {generatingId === idx ? "Generating..." : "Regenerate PDF"}
+                                        </button>
                                     ) : (
                                         <div className="flex flex-col items-end">
                                             <span className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-400 text-[10px] font-bold shadow-sm opacity-70 cursor-not-allowed">
-                                                Processing...
+                                                Unavailable
                                             </span>
                                         </div>
                                     )}
