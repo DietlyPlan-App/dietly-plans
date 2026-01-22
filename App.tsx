@@ -190,29 +190,32 @@ const App: React.FC = () => {
       safeLocalStorage.removeItem('dietly_wizard_step');
 
       // A. Save to Active Plans (Upsert - Current State)
-      const { error } = await supabase
-        .from('plans')
-        .upsert({
-          user_id: activeSession.user.id,
-          data: generatedPlan,
-          updated_at: new Date()
-        });
+      // ONLY if real user (Guest mode skips DB)
+      if (activeSession.user.id !== 'mock_user_id') {
+        const { error } = await supabase
+          .from('plans')
+          .upsert({
+            user_id: activeSession.user.id,
+            data: generatedPlan,
+            updated_at: new Date()
+          });
 
-      if (error) console.error("Failed to save to Cloud:", error);
+        if (error) console.error("Failed to save to Cloud:", error);
 
-      // B. THE VAULT: Generate PDF Blob + Upload
-      let pdfUrl: string | undefined = undefined;
-      try {
-        const blob = await generatePDFBlob(generatedPlan);
-        const dateStr = new Date().toISOString().split('T')[0];
-        const uploadedUrl = await uploadPDF(activeSession.user.id, blob, dateStr);
-        if (uploadedUrl) pdfUrl = uploadedUrl;
-      } catch (pdfError) {
-        console.warn("Vault Backup Failed (Non-Critical):", pdfError);
+        // B. THE VAULT: Generate PDF Blob + Upload
+        let pdfUrl: string | undefined = undefined;
+        try {
+          const blob = await generatePDFBlob(generatedPlan);
+          const dateStr = new Date().toISOString().split('T')[0];
+          const uploadedUrl = await uploadPDF(activeSession.user.id, blob, dateStr);
+          if (uploadedUrl) pdfUrl = uploadedUrl;
+        } catch (pdfError) {
+          console.warn("Vault Backup Failed (Non-Critical):", pdfError);
+        }
+
+        // C. Save to History (Insert - Permanent Record)
+        await saveHistory(activeSession.user.id, generatedPlan, pdfUrl);
       }
-
-      // C. Save to History (Insert - Permanent Record)
-      await saveHistory(activeSession.user.id, generatedPlan, pdfUrl);
 
       // C. Log Success
       trackEvent(activeSession.user.id, 'generation_complete', {
@@ -259,22 +262,19 @@ const App: React.FC = () => {
 
         {session ? (
           <div className="flex gap-4">
-            {currentStep === 'dashboard' && (
-              <>
-                <button
-                  onClick={() => setShowHistory(true)}
-                  className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1"
-                  title="My Plans"
-                >
-                  📂
-                  <span className="hidden sm:inline">History</span>
-                </button>
-                <button onClick={resetApp} className="text-sm font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
-                  <Zap className="w-4 h-4 md:hidden" />
-                  <span className="hidden sm:inline">New Plan</span>
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => setShowHistory(true)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors border border-transparent hover:border-emerald-100"
+              title="Open History Vault"
+            >
+              Vault
+            </button>
+            <button
+              onClick={resetApp}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm hover:shadow transition-all flex items-center gap-1.5"
+            >
+              New Plan
+            </button>
             <button onClick={handleLogout} className="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>

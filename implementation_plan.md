@@ -35,6 +35,33 @@ Implement "The Vault" to automatically backup generated PDFs and allow users to 
     3.  **NEW**: Call `uploadPDF()` -> Get URL.
     4.  **NEW**: Call `saveHistory()` with the URL.
 
+## Improved Navigation
+- [ ] **Navbar Navigation Buttons** <!-- id: 1 -->
+    - [x] Replace "History" folder icon and "New Plan" Zap icon with explicit text buttons. <!-- id: 2 -->
+    - [x] Style as rectangular buttons with rounded corners (`rounded-lg`). <!-- id: 3 -->
+    - [x] "New Plan": Primary Emerald style. <!-- id: 4 -->
+    - [x] "Vault": Secondary style (Outline or subtle background). <!-- id: 5 -->
+    - [x] Ensure they fit well on mobile (adjust padding/text size if needed). <!-- id: 6 -->
+    - [ ] **Visual Verification** <!-- id: 7 -->
+        - [ ] Small Mobile (320px) <!-- id: 8 -->
+        - [ ] Medium Mobile (375px) <!-- id: 9 -->
+        - [ ] Large Mobile (430px) <!-- id: 10 -->
+        - [ ] Tablet (768px - 1024px) <!-- id: 11 -->
+    - [ ] **Functional Verification** <!-- id: 12 -->
+        - [ ] "Vault" button opens modal. <!-- id: 13 -->
+        - [ ] "New Plan" button resets app/wizard. <!-- id: 14 -->
+
+    - [x] Verify Functionality (Vault Modal + Reset Flow) <!-- id: 20 -->
+
+- [ ] **7. Tooltip Implementation** <!-- id: 23 -->
+    - [ ] **Gender**: "Influences metabolic rate (BMR) and hormonal cycle adjustments." <!-- id: 24 -->
+    - [ ] **Last Period Start**: "Used to adjust calories for menstrual cycle phases (e.g., Luteal Phase)." <!-- id: 25 -->
+    - [ ] **Activity Level**: "Be honest. Overestimating this is the #1 reason for failed weight loss." <!-- id: 26 -->
+    - [ ] **Weekly Budget**: "Low budgets (<$20) will prioritize basics (rice/beans). Higher budgets allow more variety." <!-- id: 27 -->
+    - [ ] **Cooking Strategy**: "Fresh = Cook 3x/day. Batch = Cook once. Leftovers = Dinner is doubled for next day's lunch." <!-- id: 28 -->
+    - [ ] **Allergies**: "AI acts as a watchdog to strictly exclude these ingredients and hidden sources." <!-- id: 29 -->
+    - [ ] **Medications**: "AI checks for dangerous drug-food interactions (e.g., Warfarin vs. Vitamin K)." <!-- id: 30 -->
+
 ## Verification Plan
 1.  **Manual Test**: Generate a new plan.
 2.  **Verify**: Check if file downloaded to computer.

@@ -103,9 +103,9 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                 </button>
 
                 {/* Header */}
-                <div className="pt-6 px-6 pb-4 md:pt-8 md:px-8 md:pb-6 border-b border-slate-50">
+                <div className="pt-6 px-6 pb-4 md:pt-8 md:px-8 md:pb-6 border-b border-emerald-50/50">
                     <div className="flex items-center gap-3 md:gap-4">
-                        <div className="p-3 bg-slate-900 rounded-xl md:rounded-2xl shadow-xl shadow-slate-200">
+                        <div className="p-3 bg-emerald-500 rounded-xl md:rounded-2xl shadow-xl shadow-emerald-200">
                             <Folder className="w-6 h-6 md:w-8 md:h-8 text-white fill-white/20" />
                         </div>
                         <div>
@@ -120,16 +120,16 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                 {/* Content */}
                 <div className="p-4 md:p-6 overflow-y-auto custom-scrollbar space-y-3 md:space-y-4">
                     {loading ? (
-                        <div className="py-12 text-center text-slate-400 animate-pulse flex flex-col items-center gap-4">
-                            <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-100 rounded-full"></div>
-                            <p className="font-bold text-[10px] md:text-xs uppercase tracking-wider opacity-50">Loading History...</p>
+                        <div className="py-12 text-center text-emerald-400/50 animate-pulse flex flex-col items-center gap-4">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 rounded-full"></div>
+                            <p className="font-bold text-[10px] md:text-xs uppercase tracking-wider opacity-50 text-emerald-600">Loading History...</p>
                         </div>
                     ) : history.length === 0 ? (
                         <div className="py-10 text-center">
-                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm -rotate-3">🕸️</div>
+                            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm -rotate-3 text-emerald-500">🕸️</div>
                             <h3 className="text-slate-900 font-black text-base mb-1">The Vault is empty</h3>
                             <p className="text-slate-500 text-xs mb-6 leading-relaxed max-w-[180px] mx-auto">Generate your first plan to start building history.</p>
-                            <button onClick={onClose} className="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg shadow-slate-900/10 active:scale-95 transition-all text-sm">
+                            <button onClick={onClose} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-sm">
                                 Generate New Plan
                             </button>
                         </div>
@@ -138,7 +138,7 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                             const meta = getPlanDisplay(item);
 
                             return (
-                                <div key={idx} className="group p-4 bg-white border border-slate-100 hover:border-slate-300 rounded-2xl md:rounded-[1.5rem] transition-all shadow-sm hover:shadow-lg flex items-center justify-between gap-3">
+                                <div key={idx} className="group p-4 bg-white border border-slate-100 hover:border-emerald-200 rounded-2xl md:rounded-[1.5rem] transition-all shadow-sm hover:shadow-lg flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                                         <div className={`h-10 w-10 md:h-12 md:w-12 rounded-xl ${meta.bg} flex items-center justify-center border ${meta.border} shadow-sm shrink-0`}>
                                             {React.cloneElement(meta.icon as React.ReactElement, { className: "w-5 h-5 md:w-6 md:h-6" })}
@@ -169,7 +169,7 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                                             <button
                                                 onClick={() => item.plan && handleRegenerate(item.plan, idx)}
                                                 disabled={generatingId === idx}
-                                                className="px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[10px] md:text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-slate-900/20 active:scale-95 disabled:opacity-70"
+                                                className="px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] md:text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-70"
                                             >
                                                 {generatingId === idx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                                                 <span className="hidden sm:inline">{generatingId === idx ? "Building..." : "Regenerate"}</span>

@@ -193,7 +193,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <div>
             <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight">
               Gender
-              <Tooltip text="Gender influences metabolic rate and hormonal cycles." />
+              <Tooltip text="Influences metabolic rate (BMR) and hormonal cycle adjustments." />
             </label>
             <div className="flex gap-2.5 md:gap-4">
               {(['female', 'male'] as Gender[]).map(g => (
@@ -210,14 +210,14 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
           {/* Row 2: Metrics Grid (Age | Height | Weight) */}
           <div>
-            <div className="mb-1.5 md:mb-2">
+            <div className="mb-5 md:mb-6">
               <label className="block text-xs md:text-base font-bold text-slate-500 uppercase tracking-tight">Measurements</label>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               {/* Age - Full Width */}
               <div className="relative col-span-2">
-                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Age</label>
+                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Age</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -248,7 +248,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
               {/* Height */}
               <div className="relative">
-                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Height ({formData.unit === 'metric' ? 'cm' : 'ft.in'})</label>
+                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Height ({formData.unit === 'metric' ? 'cm' : 'ft.in'})</label>
                 {formData.unit === 'metric' ? (
                   <input
                     type="number"
@@ -276,7 +276,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
               {/* Weight */}
               <div className="relative">
-                <label className="absolute -top-2 left-2 bg-white px-1 text-[10px] font-bold text-slate-400">Weight ({formData.unit === 'metric' ? 'kg' : 'lbs'})</label>
+                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Weight ({formData.unit === 'metric' ? 'kg' : 'lbs'})</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -372,7 +372,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         <div>
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-3 md:mb-3 uppercase tracking-tight">
             How active are you?
-            <Tooltip text="Be honest. If you select too high, you might not lose weight." />
+            <Tooltip text="Be honest. Overestimating this is the #1 reason for failed weight loss." />
           </label>
           <div className="grid grid-cols-2 gap-2 md:gap-4">
             {activityOptions.map(option => (
@@ -486,6 +486,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       <div>
         <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight text-dark">
           Weekly Budget
+          <Tooltip text="Low budgets (<$20) will prioritize basics (rice/beans). Higher budgets allow more variety." />
         </label>
         <div className="flex flex-col md:flex-row gap-2.5 md:gap-4 items-center">
           <div className="relative w-full md:w-1/3">
@@ -521,6 +522,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         <div className="md:col-span-2">
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-3 uppercase tracking-tight text-dark">
             Cooking Strategy
+            <Tooltip text="Fresh = Cook 3x/day. Batch = Cook once. Leftovers = Dinner is doubled for next day's lunch." />
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 md:gap-4">
             {[
@@ -578,6 +580,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight flex items-center gap-2 text-dark">
             <ShieldAlert className="w-4 h-4 text-secondary" />
             Allergies
+            <Tooltip text="AI acts as a watchdog to strictly exclude these ingredients and hidden sources." />
           </label>
           <textarea
             placeholder="e.g. Peanuts, Gluten..."
@@ -591,6 +594,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight flex items-center gap-2 text-dark">
             <Stethoscope className="w-4 h-4 text-blue-500" />
             Medications
+            <Tooltip text="AI checks for dangerous drug-food interactions (e.g., Warfarin vs. Vitamin K)." />
           </label>
           <textarea
             placeholder="e.g. Insulin..."

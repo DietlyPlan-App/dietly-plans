@@ -1,19 +1,10 @@
-# Task List: The Vault Implementation
+# Session Tasks
 
-- [x] **1. Supabase Config (Manual)** <!-- id: 0 -->
-    - [x] Create `plans` bucket in Supabase Dashboard <!-- id: 1 -->
-- [x] **2. Services Layer** <!-- id: 2 -->
-    - [x] Create `generatePDFBlob` in `pdfService.ts` <!-- id: 3 -->
-    - [x] Implement `uploadPDF` in `supabaseClient.ts` <!-- id: 4 -->
-    - [x] Update `saveHistory` to accept PDF URL <!-- id: 5 -->
-    - [x] Implement `fetchUserHistory` in `supabaseClient.ts` <!-- id: 6 -->
-- [x] **3. Frontend UI** <!-- id: 7 -->
-    - [x] Create `components/HistoryVault.tsx` <!-- id: 8 -->
-    - [x] Add History Button in `App.tsx` Navbar <!-- id: 9 -->
-    - [x] Render `HistoryVault` modal in `App.tsx` <!-- id: 10 -->
-- [x] **4. Integration** <!-- id: 11 -->
-    - [x] Modify `handleWizardComplete` to Upload + Save <!-- id: 12 -->
-- [x] **5. Verification** <!-- id: 13 -->
-    - [x] Build Succeeds (`npm run build`) <!-- id: 14 -->
-    - [x] Live Test: Generate Plan -> Verify Upload + Save <!-- id: 15 -->
-    - [x] Open History -> Verify List and Restore <!-- id: 16 -->
+- [ ] **Setup**
+    - [x] Open App in Browser <!-- id: 1 -->
+    - [x] User Login (Manual) <!-- id: 2 -->
+- [ ] **Test Scenarios (Logged In)**
+    - [x] **Scenario 1**: Keto Cut (Male, 30, Active) <!-- id: 4 -->
+    - [ ] **Scenario 2**: Vegan Balance (Female, 25, Moderate) <!-- id: 5 -->
+    - [ ] **Scenario 3**: Budget Bulk (Male, 22, Heavy, $40) <!-- id: 6 -->
+    - [ ] **Scenario 4**: Senior Mediterranean (Female, 60, Light) <!-- id: 7 -->
