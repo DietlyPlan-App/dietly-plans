@@ -10,7 +10,6 @@ import {
     Flame,
     Dumbbell,
     Shield,
-    Info,
     RefreshCw,
     Download,
     Loader2
@@ -177,11 +176,8 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                                                 <span className="sm:hidden">{generatingId === idx ? "..." : "Fix"}</span>
                                             </button>
                                         ) : (
-                                            <div className="flex items-center gap-2 group/tooltip relative">
-                                                <div className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-bold select-none border border-slate-200">
-                                                    Unavailable
-                                                </div>
-                                                <Info className="w-3.5 h-3.5 text-slate-300 md:hidden" />
+                                            <div className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-[9px] font-bold select-none border border-slate-200">
+                                                Unavailable
                                             </div>
                                         )}
                                     </div>
