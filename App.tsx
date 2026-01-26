@@ -158,15 +158,15 @@ const App: React.FC = () => {
   // 3. Generate & Save to Supabase (PLUS TRACKING)
   const handleWizardComplete = async (stats: UserStats, explicitSession: any = null) => {
     // Determine active session (State or Explicit Argument)
-    const activeSession = explicitSession || session || { user: { id: 'mock_user_id', email: 'mock@test.com' } };
+    const activeSession = explicitSession || session;
 
     // --- AUTH INTERCEPT ---
-    // MOCK SESSION FOR LOCAL TESTING
+    // If no session, stash data and force login (Hook & Save)
     if (!activeSession) {
-      // console.log("Saving wizard data for post-login resume...");
-      // safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
-      // setShowAuthModal(true);
-      // return;
+      console.log("Saving wizard data for post-login resume...");
+      safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
+      setShowAuthModal(true);
+      return;
     }
 
 
