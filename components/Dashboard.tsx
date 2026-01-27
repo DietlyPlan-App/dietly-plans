@@ -143,7 +143,6 @@ const MealDetail: React.FC<{ meal: Meal; type: string; isReheat?: boolean }> = (
                     </div>
 
                     <p className="font-bold mb-1 text-dark">Ingredients:</p>
-                    <p className="font-bold mb-1 text-dark">Ingredients:</p>
                     <ul className="mb-3 leading-relaxed text-slate-500 space-y-1">
                         {meal.ingredients.map((ing, i) => (
                             <li key={i}>

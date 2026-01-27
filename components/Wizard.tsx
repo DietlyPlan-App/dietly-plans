@@ -88,14 +88,31 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
     // --- INPUT VALIDATION (Merged Step 1: Basics + Physical) ---
     if (step === 1) {
-      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age.");
+      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age (12-120).");
       if (!formData.gender) return alert("Please select a gender.");
-      if (!formData.height || formData.height < 50 || formData.height > 300) return alert("Please enter a valid height.");
+      // FLAW-002 FIX: Improved height validation (100-250cm realistic range)
+      if (!formData.height || formData.height < 100 || formData.height > 250) return alert("Please enter a valid height (100-250 cm).");
       if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
+
+      // FLAW-001 FIX: Age-weight plausibility warning (not block)
+      const weightToAgeRatio = formData.weight / formData.age;
+      if (weightToAgeRatio > 4 && formData.age < 18) {
+        const proceed = confirm(
+          `Weight ${formData.weight}kg seems high for age ${formData.age}. Please verify this is correct. Continue anyway?`
+        );
+        if (!proceed) return;
+      }
     }
 
     if (step === 2) {
       if (!formData.region) return alert("Please enter your City/Region.");
+    }
+
+    // BUG-001 FIX: Validate budget is not negative (step 3 before conflict checks)
+    if (step === 3) {
+      if (formData.budgetAmount < 0) {
+        return alert("Budget cannot be negative. Please enter $0 or more.");
+      }
     }
 
     // --- CONFLICT LOGIC CHECK (Before Step 5) ---
@@ -580,13 +597,52 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           <label className="block text-xs md:text-base font-bold text-slate-500 mb-1.5 md:mb-2 uppercase tracking-tight flex items-center gap-2 text-dark">
             <ShieldAlert className="w-4 h-4 text-secondary" />
             Allergies
-            <Tooltip text="AI acts as a watchdog to strictly exclude these ingredients and hidden sources." />
+            <Tooltip text="Tap common allergens or type others. AI strictly excludes these and hidden sources." />
           </label>
+          {/* FLAW-003 FIX: Quick-tap allergy buttons for common allergens (no translation needed) */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {[
+              { id: 'Peanut', emoji: '🥜' },
+              { id: 'Gluten', emoji: '🌾' },
+              { id: 'Dairy', emoji: '🥛' },
+              { id: 'Egg', emoji: '🥚' },
+              { id: 'Shellfish', emoji: '🦐' },
+              { id: 'Soy', emoji: '🫘' },
+              { id: 'Tree Nuts', emoji: '🌰' },
+              { id: 'Fish', emoji: '🐟' },
+            ].map((allergy) => {
+              const isSelected = formData.allergies.toLowerCase().includes(allergy.id.toLowerCase());
+              return (
+                <button
+                  key={allergy.id}
+                  type="button"
+                  onClick={() => {
+                    const current = formData.allergies;
+                    if (isSelected) {
+                      // Remove allergy
+                      const regex = new RegExp(allergy.id + ',?\\s*', 'gi');
+                      updateField('allergies', current.replace(regex, '').trim());
+                    } else {
+                      // Add allergy
+                      const newVal = current ? `${current}, ${allergy.id}` : allergy.id;
+                      updateField('allergies', newVal);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-all ${isSelected
+                      ? 'bg-red-100 border-red-400 text-red-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                >
+                  {allergy.emoji} {allergy.id}
+                </button>
+              );
+            })}
+          </div>
           <textarea
-            placeholder="e.g. Peanuts, Gluten..."
+            placeholder="Other allergies (e.g. Sesame, Mustard...)"
             value={formData.allergies}
             onChange={(e) => updateField('allergies', e.target.value)}
-            className="w-full p-3 md:p-5 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark min-h-[60px] md:min-h-[120px] resize-none transition-all"
+            className="w-full p-3 md:p-5 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 bg-white md:bg-slate-50 font-bold text-sm md:text-lg text-dark min-h-[60px] md:min-h-[80px] resize-none transition-all"
           />
         </div>
 

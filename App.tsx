@@ -140,7 +140,6 @@ const App: React.FC = () => {
 
         if (dbPaidStatus) {
           setIsPaid(true);
-          setIsPaid(true);
           setPlanTier(data.plan_tier || 'full'); // Default to full if is_paid is true but tier missing
         } else {
           setIsPaid(false);

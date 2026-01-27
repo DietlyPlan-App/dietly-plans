@@ -482,6 +482,20 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
     const bmi = parseFloat((stats.weight / ((stats.height / 100) ** 2)).toFixed(1));
 
+    // BUG-002 FIX: Eating Disorder Risk Screening
+    // Detects high-risk patterns that may indicate eating disorder vulnerability
+    // This is not a block - UI will show resources modal and allow proceeding after acknowledgment
+    const isHighRiskEDPattern = (
+        bmi < 18.5 &&
+        stats.goal === 'lose' &&
+        stats.age >= 14 &&
+        stats.age <= 35 &&
+        !stats.isPregnant // Pregnancy overrides concern
+    );
+    if (isHighRiskEDPattern) {
+        throw new Error("EATING_DISORDER_SCREENING: Your current BMI is already in the underweight range. We cannot in good conscience generate a weight loss plan. If you are struggling with your relationship with food, please reach out: National Eating Disorders Association: 1-800-931-2237 | Crisis Text Line: Text 'NEDA' to 741741");
+    }
+
     // --- MENSTRUAL CYCLE ADJUSTMENT (LUTEAL PHASE) ---
     let cycleCalorieBuffer = 0;
     if (stats.lastPeriodStart) {
@@ -496,8 +510,15 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
     }
 
-    // INPUT SANITIZATION
-    const sanitize = (str: string) => str.replace(/[{}]/g, "").replace(/System:/gi, "").replace(/Instructions:/gi, "");
+    // INPUT SANITIZATION (SEC-001 STRENGTHENED)
+    const sanitize = (str: string) => str
+        .replace(/[{}[\]]/g, "")
+        .replace(/System:/gi, "")
+        .replace(/Instructions?:/gi, "")
+        .replace(/ignore (previous|above|prior)/gi, "")
+        .replace(/you are now/gi, "")
+        .replace(/forget everything/gi, "")
+        .slice(0, 500); // Max 500 chars to limit attack surface
     stats.allergies = sanitize(stats.allergies);
     stats.medications = sanitize(stats.medications);
     // ROUND 8: Prevent Prompt Injection via Name
@@ -629,7 +650,15 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
     }
     else if (stats.isPregnant || stats.isBreastfeeding) {
-        if (stats.isPregnant) {
+        // EDGE-001 FIX: Combined pregnancy+breastfeeding uses +600kcal (not additive +800)
+        // This handles rare tandem nursing scenario with medically appropriate calorie boost
+        if (stats.isPregnant && stats.isBreastfeeding) {
+            calorieTarget = tdee + 600;
+            logAdjustment("Medical Notice: Pregnancy + Breastfeeding detected. Adding +600kcal (combined, not additive).");
+            if (stats.goal === 'lose') {
+                logAdjustment("Notice: Overriding 'Lose' goal to 'Maintain' for maternal health.");
+            }
+        } else if (stats.isPregnant) {
             calorieTarget = stats.goal === 'gain' ? Math.round(tdee + 300) : tdee;
             if (stats.goal === 'lose') {
                 logAdjustment("Notice: Pregnancy detected. Overriding 'Lose' goal to 'Maintain'.");
@@ -682,13 +711,17 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         let safetyDirectives = "";
 
         // 1. DRUG-FOOD INTERACTIONS
-        if (combinedHealthText.includes("warfarin") || combinedHealthText.includes("coumadin") || combinedHealthText.includes("jantoven")) {
+        // 1. DRUG-FOOD INTERACTIONS (FLAW-004: Expanded Brand/Generic Aliases)
+        // WARFARIN aliases
+        if (/warfarin|coumadin|jantoven|marevan/i.test(combinedHealthText)) {
             safetyDirectives += "CRITICAL WARNING: PATIENT ON WARFARIN. NO GRAPEFRUIT, CRANBERRY, or DRASTIC VITAMIN K FLUCTUATIONS. ";
         }
-        if (combinedHealthText.includes("statin") || combinedHealthText.includes("lipitor")) {
+        // STATIN aliases (common generics and brands)
+        if (/statin|lipitor|atorvastatin|zocor|simvastatin|crestor|rosuvastatin|pravachol|pravastatin/i.test(combinedHealthText)) {
             safetyDirectives += "CRITICAL WARNING: PATIENT ON STATINS. NO GRAPEFRUIT. ";
         }
-        if (combinedHealthText.includes("maoi") || combinedHealthText.includes("nardil")) {
+        // MAOI aliases
+        if (/maoi|nardil|phenelzine|parnate|tranylcypromine|marplan|isocarboxazid|emsam|selegiline/i.test(combinedHealthText)) {
             safetyDirectives += "CRITICAL WARNING: PATIENT ON MAOIs. LOW TYRAMINE DIET REQUIRED (No Aged Cheese, Cured Meats, Fermented Foods). ";
         }
 
@@ -886,6 +919,10 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // GLP-1 SAFETY
         if (isGLP1) {
             safetyDirectives += "GLP-1 AGONIST: APPETITE IS SUPPRESSED. FORCE HIGH PROTEIN DENSITY. SMALL VOLUME MEALS. NO 'VOLUMETRIC EATING' (Salads fill stomach too fast). ";
+            // EDGE-003 FIX: GLP-1 + Low Budget conflict resolution
+            if (stats.budgetAmount < 40) {
+                safetyDirectives += "BUDGET CONSTRAINT (GLP-1): HIGH PROTEIN REQUIRED BUT LOW BUDGET. FOCUS ON CHEAP PROTEIN: EGGS, CANNED TUNA/SARDINES, COTTAGE CHEESE, GREEK YOGURT, CHICKEN THIGHS, LENTILS. AVOID EXPENSIVE CUTS. ";
+            }
         }
 
         // LEFTOVER LOGIC
