@@ -197,7 +197,7 @@ const App: React.FC = () => {
             user_id: activeSession.user.id,
             data: generatedPlan,
             updated_at: new Date()
-          });
+          }, { onConflict: 'user_id' });
 
         if (error) console.error("Failed to save to Cloud:", error);
 
