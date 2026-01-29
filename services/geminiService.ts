@@ -659,6 +659,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const isBariatric = containsCondition(combinedHealthText, /sleeve|gastric|bypass|bariatric/i);
     const isCirrhosis = containsCondition(combinedHealthText, /cirrhosis|ascites|liver failure|hepatic|varices|esophageal varices/i);
     const isEncephalopathy = containsCondition(combinedHealthText, /encephalopathy|confusion|ammonia|lactulose/i);
+    const isGastroparesis = containsCondition(combinedHealthText, /gastroparesis|delayed gastric emptying/i);
     const isKidneyStones = containsCondition(combinedHealthText, /stone|oxalate|nephrolithiasis/i); // Specific Stone Check
     const isThyroid = containsCondition(combinedHealthText, /thyroid|hypothyroid|hashimoto/i);
     const isCeliac = containsCondition(combinedHealthText, /celiac|gluten|wheat/i);
@@ -1040,6 +1041,11 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
                 safetyDirectives += "LIVER CIRRHOSIS PROTOCOL (COMPENSATED): HIGH PROTEIN (1.2-1.5g/kg) PREVENTS MORTALITY. DO NOT RESTRICT PROTEIN. ";
             }
             safetyDirectives += "ASCITES MANAGEMENT: STRICT LOW SODIUM (<2000mg). LATE EVENING SNACK (Complex Carb + Protein) MANDATORY to prevent overnight starvation state. NO RAW SHELLFISH/OYSTERS (Vibrio Rule). AVOID ALCOHOL COMPLETELY. ";
+        }
+
+        // GASTROPARESIS SAFETY
+        if (isGastroparesis) {
+            safetyDirectives += "GASTROPARESIS PROTOCOL: CRITICAL. STOMACH PARALYSIS DETECTED. DIET MUST BE: 1) LOW FAT (<40g/day). 2) LOW FIBER (<15g/day). 3) SMALL FREQUENT MEALS (6x/day). NO RAW VEGETABLES. COOK VEGETABLES TO MUSH. BLENDERIZED/LIQUID MEALS PREFERRED. AVOID SKINS/SEEDS. ";
         }
 
         // ROUND 12: HYPERTENSION PROTOCOL (DASH) - UPDATED FOR SPIRONOLACTONE
