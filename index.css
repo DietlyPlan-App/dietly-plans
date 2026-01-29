@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* --- CUSTOM GLOBAL STYLES --- */
+body {
+    background-color: #F8FAFC;
+    color: #1e293b;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Hide scrollbar but keep scrollability */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Hide number input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* Progress bar animation */
+@keyframes progress-indeterminate {
+    0% {
+        width: 0%;
+        margin-left: 0%;
+    }
+
+    50% {
+        width: 70%;
+        margin-left: 30%;
+    }
+
+    100% {
+        width: 0%;
+        margin-left: 100%;
+    }
+}
+
+.animate-progress-indeterminate {
+    animation: progress-indeterminate 2s infinite ease-in-out;
+}

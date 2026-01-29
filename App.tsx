@@ -386,9 +386,9 @@ const App: React.FC = () => {
             <div className="relative w-full max-w-md">
               <button
                 onClick={() => setShowAuthModal(false)}
-                className="absolute -top-12 right-0 md:-right-12 text-white hover:text-slate-200 transition-colors"
+                className="absolute top-2 right-2 md:-top-12 md:-right-12 z-10 text-slate-500 md:text-white hover:text-slate-700 md:hover:text-slate-200 transition-colors bg-white md:bg-transparent rounded-full p-1 shadow-md md:shadow-none"
               >
-                <X className="w-8 h-8" />
+                <X className="w-6 h-6 md:w-8 md:h-8" />
               </button>
               <Auth onLogin={() => {
                 setShowAuthModal(false);
@@ -431,17 +431,6 @@ const App: React.FC = () => {
       <footer className="text-center p-8 text-slate-400 text-sm font-medium">
         &copy; 2025 DietlyPlans AI. Not medical advice. Data processed by AI. By using this app, you acknowledge anonymized processing.
       </footer>
-
-      <style>{`
-        @keyframes progress-indeterminate {
-            0% { width: 0%; margin-left: 0%; }
-            50% { width: 70%; margin-left: 30%; }
-            100% { width: 0%; margin-left: 100%; }
-        }
-        .animate-progress-indeterminate {
-            animation: progress-indeterminate 2s infinite ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };
