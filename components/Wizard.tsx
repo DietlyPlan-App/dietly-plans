@@ -104,7 +104,45 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       }
     }
 
+    // CRITICAL SAFETY: BMI check at Step 2 (after height/weight are set, when goal is chosen)
     if (step === 2) {
+      const heightM = formData.height / 100;
+      const bmi = formData.weight / (heightM * heightM);
+
+      // SAFETY BLOCK: Underweight + Weight Loss Goal
+      if (bmi < 17 && formData.goal === 'lose') {
+        setConflictMessage({
+          title: "🚨 Safety Block: Underweight",
+          description: `Your BMI (${bmi.toFixed(1)}) indicates you are severely underweight. We cannot generate a weight loss plan as this could be dangerous to your health.\n\n` +
+            `If you're struggling with eating or body image, please consider reaching out:\n` +
+            `• National Eating Disorders Association: 1-800-931-2237\n` +
+            `• Crisis Text Line: Text "NEDA" to 741741\n\n` +
+            `We recommend selecting "Maintain" or "Gain" as your goal.`
+        });
+        setShowConflictModal(true);
+        return; // HARD BLOCK
+      }
+
+      // WARNING: Underweight + Maintain (soft warning, allow proceed)
+      if (bmi < 18.5 && formData.goal === 'maintain') {
+        setConflictMessage({
+          title: "⚠️ Underweight Advisory",
+          description: `Your BMI (${bmi.toFixed(1)}) is below normal (18.5). While we will generate a maintenance plan, you may benefit from gradually increasing calories. Consider consulting a healthcare professional.`
+        });
+        setShowConflictModal(true);
+        // Don't return - allow to proceed after acknowledgment
+      }
+
+      // SAFETY BLOCK: Morbidly Obese + Aggressive Weight Loss without medical supervision
+      if (bmi > 40 && formData.goal === 'lose') {
+        setConflictMessage({
+          title: "⚠️ High BMI Advisory",
+          description: `Your BMI (${bmi.toFixed(1)}) indicates Class III obesity. For your safety, we recommend working with a healthcare provider to ensure safe weight loss. The AI will generate a conservative deficit (max 500 cal/day) to prioritize your health.`
+        });
+        setShowConflictModal(true);
+        // Soft warning - allow to proceed
+      }
+
       if (!formData.region) return alert("Please enter your City/Region.");
     }
 
