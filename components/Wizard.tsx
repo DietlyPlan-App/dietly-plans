@@ -315,20 +315,23 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
               {/* Height */}
               <div className="relative">
-                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Height ({formData.unit === 'metric' ? 'cm' : 'ft & in'})</label>
                 {formData.unit === 'metric' ? (
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    aria-label="Height in centimeters"
-                    value={formData.height || ''}
-                    onChange={(e) => updateField('height', parseFloat(e.target.value) || 0)}
-                    className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
-                    placeholder="170"
-                  />
+                  <>
+                    <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700 z-10">Height (cm)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      aria-label="Height in centimeters"
+                      value={formData.height || ''}
+                      onChange={(e) => updateField('height', parseFloat(e.target.value) || 0)}
+                      className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                      placeholder="170"
+                    />
+                  </>
                 ) : (
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
+                      <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700 z-10">Height (ft & in)</label>
                       <input
                         type="number"
                         inputMode="numeric"
