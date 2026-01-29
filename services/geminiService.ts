@@ -1,21 +1,38 @@
 
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { UserStats, AIResponse, DailyPlan, MonthPlan, Meal, MacroSplit } from "../types";
+import { supabase } from "./supabaseClient";
+
+// --- PRODUCTION-SAFE LOGGING ---
+const isDev = import.meta.env.DEV;
+const devLog = (...args: any[]) => isDev && console.log(...args);
+const devError = (...args: any[]) => isDev && console.error(...args);
 
 // --- OWNER CONFIGURATION ---
 const OWNER_CONFIG = {
     modelName: "gemini-1.5-flash",
-    apiKey: import.meta.env.VITE_GEMINI_API_KEY
+    apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+    // In production, use Edge Function; in dev, use direct API (for testing)
+    useEdgeFunction: !isDev
 };
 
-// DEBUG: Log immediately on module load
-console.log("🚀 GEMINI SERVICE MODULE LOADED");
-console.log("🔑 API KEY STATUS:", OWNER_CONFIG.apiKey ? "PRESENT (Length: " + OWNER_CONFIG.apiKey.length + ")" : "MISSING");
-console.log("🌍 FULL ENV CHECK:", JSON.stringify({
-    VITE_GEMINI_API_KEY: typeof import.meta.env.VITE_GEMINI_API_KEY,
-    MODE: import.meta.env.MODE,
-    BASE_URL: import.meta.env.BASE_URL
-}));
+// Only log in development
+devLog("🚀 Gemini Service Initialized", { useEdgeFunction: OWNER_CONFIG.useEdgeFunction });
+
+// --- EDGE FUNCTION CALLER (Secure Server-Side API Key) ---
+const callGeminiViaEdge = async (prompt: string, schema?: any): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: { prompt, schema, maxTokens: 60000 }
+    });
+
+    if (error) throw new Error(`Edge Function Error: ${error.message}`);
+    if (!data?.text) throw new Error("No response from AI");
+
+    return data.text;
+};
 
 // --- MATH HELPERS (Advanced) ---
 export const calculateBaseWater = (weightKg: number, activity: string, isBreastfeeding: boolean, age: number): number => {
@@ -440,10 +457,10 @@ const validateFoodPhysics = (meal: Meal): Meal => {
 
 export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: string) => void): Promise<AIResponse> => {
     if (!OWNER_CONFIG.apiKey) {
-        console.error("❌ GEMINI SERVICE ERROR: API Key is missing in OWNER_CONFIG");
+        devError("❌ GEMINI SERVICE ERROR: API Key is missing in OWNER_CONFIG");
         throw new Error("API Key is missing.");
     }
-    console.log("✅ GEMINI SERVICE: API Key detected (length: " + OWNER_CONFIG.apiKey.length + ")");
+    devLog("✅ GEMINI SERVICE: API Key detected (length: " + OWNER_CONFIG.apiKey.length + ")");
 
     const ai = new GoogleGenAI({ apiKey: OWNER_CONFIG.apiKey });
 
@@ -543,7 +560,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const combinedHealthText = (stats.medications + " " + stats.allergies + " " + (stats.conditions || "")).toLowerCase();
 
     // DEBUG: Log the health text to ensure inputs are arriving
-    console.log("🚑 GEMINI SERVICE: Scanning Health Text:", combinedHealthText);
+    devLog("🚑 GEMINI SERVICE: Scanning Health Text:", combinedHealthText);
 
     // HELPER: Context-Aware Detection (Negation Handling + Word Boundaries)
     // Returns true if 'term' is found BUT NOT preceded by "no", "not", "without".
@@ -555,7 +572,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         const index = match.index || 0;
         const lookbehind = text.substring(Math.max(0, index - 25), index);
         if (/no\b|not\b|negative|without/i.test(lookbehind)) {
-            console.log(`ℹ️ Negation Detected: Found '${match[0]}' but ignored due to context ('${lookbehind.trim()}').`);
+            devLog(`ℹ️ Negation Detected: Found '${match[0]}' but ignored due to context ('${lookbehind.trim()}').`);
             return false;
         }
         return true;
@@ -1027,7 +1044,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         let finalTargetLitres = Math.min(parseFloat(finalWater.toFixed(1)), isRenal ? 1.5 : 5.5);
 
         if (isRenal && finalTargetLitres > 1.5) {
-            console.error("⛔ SAFETY INTERVENTION: Resetting Water to 1.5L for Renal Safety.");
+            devError("⛔ SAFETY INTERVENTION: Resetting Water to 1.5L for Renal Safety.");
             finalTargetLitres = 1.5;
         }
 
@@ -1050,7 +1067,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             }
         };
     } catch (e) {
-        console.error("AI FAILED. ACTIVATING DYNAMIC FALLBACK PROTOCOL.");
+        devError("AI FAILED. ACTIVATING DYNAMIC FALLBACK PROTOCOL.");
         if (onProgress) onProgress("AI Service Unreachable. Activating Diet-Aware Emergency Fallback...");
 
         const fallback = getDynamicFallback(stats, calorieTarget, macroTargets);

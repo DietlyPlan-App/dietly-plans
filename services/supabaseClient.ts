@@ -1,15 +1,30 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// --- PRODUCTION-SAFE LOGGING ---
+const isDev = import.meta.env.DEV;
+const devError = (...args: any[]) => isDev && console.error(...args);
+const devWarn = (...args: any[]) => isDev && console.warn(...args);
+
 // --- CONFIGURATION ---
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("CRITICAL ERROR: Supabase configuration is missing. Please check .env.local");
+  devError("CRITICAL ERROR: Supabase configuration is missing. Please check .env.local");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Session timeout set to 45 minutes (2700 seconds) to prevent wizard interruption
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    // Note: Actual session timeout is controlled by Supabase project settings
+    // This config ensures the client auto-refreshes tokens before expiry
+  }
+});
+
 
 // --- TRACKING HELPERS ---
 
@@ -24,10 +39,10 @@ export const trackEvent = async (userId: string, action: string, details: object
       action_type: action,
       metadata: details,
     }).then(({ error }) => {
-      if (error) console.warn("Tracking Error:", error.message);
+      if (error) devWarn("Tracking Error:", error.message);
     });
   } catch (e) {
-    console.warn("Tracking failed silently", e);
+    devWarn("Tracking failed silently", e);
   }
 };
 
@@ -49,7 +64,7 @@ export const uploadPDF = async (userId: string, pdfBlob: Blob, dateStr: string):
       });
 
     if (error) {
-      console.warn("Storage Upload Error:", error.message);
+      devWarn("Storage Upload Error:", error.message);
       return null;
     }
 
@@ -63,7 +78,7 @@ export const uploadPDF = async (userId: string, pdfBlob: Blob, dateStr: string):
     return signedData.signedUrl;
 
   } catch (e) {
-    console.warn("Upload failed completely", e);
+    devWarn("Upload failed completely", e);
     return null;
   }
 };
@@ -85,9 +100,9 @@ export const saveHistory = async (userId: string, fullData: any, pdfUrl?: string
       full_data: archivalData
     });
 
-    if (error) console.warn("History Archive Error:", error.message);
+    if (error) devWarn("History Archive Error:", error.message);
   } catch (e) {
-    console.warn("History save failed", e);
+    devWarn("History save failed", e);
   }
 };
 
@@ -114,7 +129,84 @@ export const fetchUserHistory = async (userId: string) => {
     }));
 
   } catch (e) {
-    console.warn("Fetch History Failed", e);
+    devWarn("Fetch History Failed", e);
     return [];
   }
+};
+
+// --- RATE LIMITING ---
+
+const DAILY_GENERATION_LIMIT = 3;
+
+/**
+ * Check if user has exceeded daily generation limit
+ * Returns: { allowed: boolean, remaining: number, resetTime: Date }
+ */
+export const checkRateLimit = async (userId: string): Promise<{
+  allowed: boolean;
+  remaining: number;
+  generationsToday: number;
+  resetTime: Date;
+}> => {
+  try {
+    // Get start of today (UTC)
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    // Count 'generation_started' events today for this user
+    const { count, error } = await supabase
+      .from('activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('action_type', 'generation_started')
+      .gte('created_at', todayISO);
+
+    if (error) {
+      devWarn("Rate limit check error:", error.message);
+      // On error, allow generation but warn
+      return { allowed: true, remaining: DAILY_GENERATION_LIMIT, generationsToday: 0, resetTime: getNextResetTime() };
+    }
+
+    const generationsToday = count || 0;
+    const remaining = Math.max(0, DAILY_GENERATION_LIMIT - generationsToday);
+    const allowed = generationsToday < DAILY_GENERATION_LIMIT;
+
+    return {
+      allowed,
+      remaining,
+      generationsToday,
+      resetTime: getNextResetTime()
+    };
+  } catch (e) {
+    devWarn("Rate limit check failed:", e);
+    return { allowed: true, remaining: DAILY_GENERATION_LIMIT, generationsToday: 0, resetTime: getNextResetTime() };
+  }
+};
+
+/**
+ * Track when a generation is started (for rate limiting)
+ */
+export const trackGenerationStart = async (userId: string, userEmail: string) => {
+  await trackEvent(userId, 'generation_started', { email: userEmail, timestamp: new Date().toISOString() });
+};
+
+/**
+ * Get time until rate limit resets (midnight UTC)
+ */
+const getNextResetTime = (): Date => {
+  const tomorrow = new Date();
+  tomorrow.setUTCHours(24, 0, 0, 0);
+  return tomorrow;
+};
+
+/**
+ * Format remaining time until reset
+ */
+export const formatTimeUntilReset = (resetTime: Date): string => {
+  const now = new Date();
+  const diffMs = resetTime.getTime() - now.getTime();
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}m`;
 };

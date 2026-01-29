@@ -1,16 +1,29 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Wizard from './components/Wizard';
-import Dashboard from './components/Dashboard';
 import Auth from './components/Auth'; // Import Auth
-import { HistoryVault } from './components/HistoryVault'; // NEW: Vault UI
 import { generateMealPlan } from './services/geminiService';
-import { supabase, trackEvent, saveHistory, uploadPDF } from './services/supabaseClient'; // Import Client & Tracking
+import { supabase, trackEvent, saveHistory, uploadPDF, checkRateLimit, trackGenerationStart, formatTimeUntilReset } from './services/supabaseClient'; // Import Client & Tracking
 import { generatePDFBlob } from './services/pdfService'; // NEW: Vault Blob Generator
 import { UserStats, AIResponse } from './types';
 import { Zap, LogOut, X, CheckCircle } from 'lucide-react';
 import { safeLocalStorage } from './src/utils/storageUtils';
 
+// --- LAZY LOADED COMPONENTS (Code Splitting for Bundle Optimization) ---
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const HistoryVault = React.lazy(() => import('./components/HistoryVault').then(m => ({ default: m.HistoryVault })));
+
+// --- PRODUCTION-SAFE LOGGING ---
+const isDev = import.meta.env.DEV;
+const devLog = (...args: any[]) => isDev && console.log(...args);
+const devError = (...args: any[]) => isDev && console.error(...args);
+
+// --- LOADING FALLBACK COMPONENT ---
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
 
 
 const App: React.FC = () => {
@@ -48,7 +61,7 @@ const App: React.FC = () => {
         if (pendingDataRaw) {
           try {
             const pendingStats = JSON.parse(pendingDataRaw);
-            console.log("Found pending wizard data, resuming generation...", pendingStats);
+            devLog("Found pending wizard data, resuming generation...", pendingStats);
             safeLocalStorage.removeItem('dietly_pending_wizard_data'); // Clear it
 
             // Resume Generation immediately with the NEW data
@@ -58,7 +71,7 @@ const App: React.FC = () => {
 
             return; // EXIT EARLY: Do NOT fetch old DB data
           } catch (e) {
-            console.error("Failed to parse pending data", e);
+            devError("Failed to parse pending data", e);
           }
         }
 
@@ -127,7 +140,7 @@ const App: React.FC = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found" (New user)
-        console.error('Error fetching plan:', error);
+        devError('Error fetching plan:', error);
       }
 
       if (data) {
@@ -150,7 +163,7 @@ const App: React.FC = () => {
       }
       // Note: If no plan exists, we stay on 'wizard' (which will load saved state from localStorage)
     } catch (e) {
-      console.error("DB Fetch Error", e);
+      devError("DB Fetch Error", e);
     }
   };
 
@@ -162,18 +175,26 @@ const App: React.FC = () => {
     // --- AUTH INTERCEPT ---
     // If no session, stash data and force login (Hook & Save)
     if (!activeSession) {
-      console.log("Saving wizard data for post-login resume...");
+      devLog("Saving wizard data for post-login resume...");
       safeLocalStorage.setItem('dietly_pending_wizard_data', JSON.stringify(stats));
       setShowAuthModal(true);
       return;
     }
 
+    // --- RATE LIMIT CHECK ---
+    const rateLimitResult = await checkRateLimit(activeSession.user.id);
+    if (!rateLimitResult.allowed) {
+      const timeUntilReset = formatTimeUntilReset(rateLimitResult.resetTime);
+      alert(`⏰ Daily Limit Reached!\n\nYou've generated ${rateLimitResult.generationsToday} plans today (max 3).\n\nYour limit resets in ${timeUntilReset}.\n\nCome back tomorrow for more personalized plans!`);
+      return;
+    }
 
     setCurrentStep('loading');
     setLoadingText("Starting Analysis...");
 
-    // TRACKING: Log User Inputs (via the start of generation)
-    trackEvent(activeSession.user.id, 'generation_started', { inputs: stats });
+    // TRACKING: Log User Inputs + Rate Limit Tracking
+    await trackGenerationStart(activeSession.user.id, activeSession.user.email);
+    trackEvent(activeSession.user.id, 'generation_started', { inputs: stats, remaining: rateLimitResult.remaining - 1 });
 
     try {
       // Generate Logic
@@ -199,7 +220,7 @@ const App: React.FC = () => {
             updated_at: new Date()
           }, { onConflict: 'user_id' });
 
-        if (error) console.error("Failed to save to Cloud:", error);
+        if (error) devError("Failed to save to Cloud:", error);
 
         // B. THE VAULT: Generate PDF Blob + Upload
         let pdfUrl: string | undefined = undefined;
@@ -223,7 +244,7 @@ const App: React.FC = () => {
       });
 
     } catch (error) {
-      console.error(error);
+      devError(error);
       if (activeSession) trackEvent(activeSession.user.id, 'generation_failed', { error: String(error) });
       alert("Failed to generate plan. Please try again.");
       setCurrentStep('wizard');
@@ -237,14 +258,19 @@ const App: React.FC = () => {
   };
 
   const resetApp = async () => {
+    devLog("🔴 resetApp CALLED - About to show confirm dialog");
     if (window.confirm("Start over? This will generate a new plan.")) {
+      devLog("🟢 User confirmed - resetting app");
       setCurrentStep('wizard');
       setPlan(null); // Clear state
       safeLocalStorage.removeItem('dietly_plan'); // Clear storage
       safeLocalStorage.removeItem('dietly_step');
       if (session) trackEvent(session.user.id, 'app_reset_clicked');
+    } else {
+      devLog("🟡 User cancelled reset");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-light font-sans text-dark selection:bg-primary selection:text-white relative">
@@ -263,6 +289,7 @@ const App: React.FC = () => {
           <div className="flex gap-4">
             <button
               onClick={() => setShowHistory(true)}
+              aria-label="Open history vault"
               className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors border border-transparent hover:border-emerald-100"
               title="Open History Vault"
             >
@@ -270,11 +297,12 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={resetApp}
+              aria-label="Start a new meal plan"
               className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm hover:shadow transition-all flex items-center gap-1.5"
             >
               New Plan
             </button>
-            <button onClick={handleLogout} className="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
+            <button onClick={handleLogout} aria-label="Sign out of your account" className="text-sm font-bold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
@@ -283,6 +311,7 @@ const App: React.FC = () => {
           // Optional: Sign In button if they want to login early
           <button
             onClick={() => setShowAuthModal(true)}
+            aria-label="Log in to your account"
             className="text-sm font-bold text-primary hover:text-primaryDark transition-colors"
           >
             Log In
@@ -313,14 +342,16 @@ const App: React.FC = () => {
         {/* DASHBOARD */}
         {currentStep === 'dashboard' && plan && (
           <div className="animate-in slide-in-from-bottom-10 fade-in duration-700">
-            <Dashboard
-              plan={plan}
-              isPaid={isPaid}
-              planTier={planTier}
-              onUnlock={() => { }} // Legacy prop, we handle redirect inside Dashboard now
-              userId={session?.user?.id}
-              userEmail={session?.user?.email}
-            />
+            <Suspense fallback={<LoadingFallback />}>
+              <Dashboard
+                plan={plan}
+                isPaid={isPaid}
+                planTier={planTier}
+                onUnlock={() => { }} // Legacy prop, we handle redirect inside Dashboard now
+                userId={session?.user?.id}
+                userEmail={session?.user?.email}
+              />
+            </Suspense>
           </div>
         )}
 
@@ -367,7 +398,9 @@ const App: React.FC = () => {
 
         {/* HISTORY VAULT MODAL */}
         {showHistory && session && (
-          <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} />
+          <Suspense fallback={<LoadingFallback />}>
+            <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} />
+          </Suspense>
         )}
 
         {/* PAYMENT SUCCESS CELEBRATION */}

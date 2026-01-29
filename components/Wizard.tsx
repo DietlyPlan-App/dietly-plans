@@ -90,8 +90,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     if (step === 1) {
       if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age (12-120).");
       if (!formData.gender) return alert("Please select a gender.");
-      // FLAW-002 FIX: Improved height validation (100-250cm realistic range)
-      if (!formData.height || formData.height < 100 || formData.height > 250) return alert("Please enter a valid height (100-250 cm).");
+      // FLAW-002 FIX: Improved height validation (50-280cm inclusive range for edge cases)
+      if (!formData.height || formData.height < 50 || formData.height > 280) return alert("Please enter a valid height (50-280 cm).");
       if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
 
       // FLAW-001 FIX: Age-weight plausibility warning (not block)
@@ -265,31 +265,59 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
               {/* Height */}
               <div className="relative">
-                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Height ({formData.unit === 'metric' ? 'cm' : 'ft.in'})</label>
+                <label className="absolute -top-3 left-2 bg-white px-1 text-xs md:text-sm font-extrabold text-slate-700">Height ({formData.unit === 'metric' ? 'cm' : 'ft & in'})</label>
                 {formData.unit === 'metric' ? (
                   <input
                     type="number"
                     inputMode="decimal"
+                    aria-label="Height in centimeters"
                     value={formData.height || ''}
                     onChange={(e) => updateField('height', parseFloat(e.target.value) || 0)}
                     className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
                     placeholder="170"
                   />
                 ) : (
-                  <input
-                    type="text"
-                    value={Math.floor(formData.height / 30.48) + "." + Math.round((formData.height % 30.48) / 2.54)}
-                    onChange={(e) => {
-                      const parts = e.target.value.split('.');
-                      const ft = parseInt(parts[0]) || 0;
-                      const inch = parseInt(parts[1]) || 0;
-                      updateField('height', (ft * 30.48) + (inch * 2.54));
-                    }}
-                    className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
-                    placeholder="5.10"
-                  />
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        aria-label="Height in feet"
+                        value={Math.floor(formData.height / 30.48) || ''}
+                        onChange={(e) => {
+                          const ft = parseInt(e.target.value) || 0;
+                          const currentInches = Math.round((formData.height % 30.48) / 2.54);
+                          updateField('height', (ft * 30.48) + (currentInches * 2.54));
+                        }}
+                        className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                        placeholder="5"
+                        min="0"
+                        max="8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">ft</span>
+                    </div>
+                    <div className="flex-1 relative">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        aria-label="Height in inches"
+                        value={Math.round((formData.height % 30.48) / 2.54) || ''}
+                        onChange={(e) => {
+                          const inch = Math.min(11, Math.max(0, parseInt(e.target.value) || 0));
+                          const currentFeet = Math.floor(formData.height / 30.48);
+                          updateField('height', (currentFeet * 30.48) + (inch * 2.54));
+                        }}
+                        className="w-full p-3 md:p-4 rounded-xl border-2 border-slate-100 focus:outline-none focus:border-primary text-center font-bold text-sm md:text-lg text-dark"
+                        placeholder="10"
+                        min="0"
+                        max="11"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">in</span>
+                    </div>
+                  </div>
                 )}
               </div>
+
 
               {/* Weight */}
               <div className="relative">
@@ -629,8 +657,8 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                     }
                   }}
                   className={`px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-all ${isSelected
-                      ? 'bg-red-100 border-red-400 text-red-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    ? 'bg-red-100 border-red-400 text-red-700'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                 >
                   {allergy.emoji} {allergy.id}
@@ -729,7 +757,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       {/* Footer - STICKY ON MOBILE */}
       <div className="fixed bottom-0 left-0 right-0 md:relative px-6 py-4 md:px-10 md:py-8 border-t border-slate-5 bg-white z-50 flex justify-between items-center md:bg-transparent md:border-none">
         {step > 1 ? (
-          <button onClick={handleBack} className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
+          <button onClick={handleBack} aria-label="Go back to previous step" className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
             Back
           </button>
         ) : <div />}
@@ -737,6 +765,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         <button
           onClick={step === 5 ? handleComplete : handleNext}
           disabled={loading || isSubmitting}
+          aria-label={step === 5 ? 'Generate meal plan' : 'Continue to next step'}
           className="bg-primary hover:bg-primaryDark text-white px-6 md:px-10 py-3 md:py-5 rounded-xl font-bold text-sm md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading || isSubmitting ? 'Thinking...' : (step === 5 ? 'Generate' : 'Next')}
@@ -752,12 +781,14 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConflictModal(false)}
+                aria-label="Go back and change inputs"
                 className="flex-1 py-3 px-4 bg-slate-100 font-bold text-slate-700 rounded-xl hover:bg-slate-200 transition-colors"
               >
                 Change Inputs
               </button>
               <button
                 onClick={() => { setShowConflictModal(false); setStep(step + 1); }}
+                aria-label="Acknowledge warning and proceed"
                 className="flex-1 py-3 px-4 bg-amber-500 font-bold text-white rounded-xl hover:bg-amber-600 transition-colors"
               >
                 Proceed Anyway
