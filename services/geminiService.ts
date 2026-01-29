@@ -8,6 +8,15 @@ const OWNER_CONFIG = {
     apiKey: import.meta.env.VITE_GEMINI_API_KEY
 };
 
+// DEBUG: Log immediately on module load
+console.log("🚀 GEMINI SERVICE MODULE LOADED");
+console.log("🔑 API KEY STATUS:", OWNER_CONFIG.apiKey ? "PRESENT (Length: " + OWNER_CONFIG.apiKey.length + ")" : "MISSING");
+console.log("🌍 FULL ENV CHECK:", JSON.stringify({
+    VITE_GEMINI_API_KEY: typeof import.meta.env.VITE_GEMINI_API_KEY,
+    MODE: import.meta.env.MODE,
+    BASE_URL: import.meta.env.BASE_URL
+}));
+
 // --- MATH HELPERS (Advanced) ---
 export const calculateBaseWater = (weightKg: number, activity: string, isBreastfeeding: boolean, age: number): number => {
     let base = 0;
@@ -430,7 +439,12 @@ const validateFoodPhysics = (meal: Meal): Meal => {
 };
 
 export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: string) => void): Promise<AIResponse> => {
-    if (!OWNER_CONFIG.apiKey) throw new Error("API Key is missing.");
+    if (!OWNER_CONFIG.apiKey) {
+        console.error("❌ GEMINI SERVICE ERROR: API Key is missing in OWNER_CONFIG");
+        throw new Error("API Key is missing.");
+    }
+    console.log("✅ GEMINI SERVICE: API Key detected (length: " + OWNER_CONFIG.apiKey.length + ")");
+
     const ai = new GoogleGenAI({ apiKey: OWNER_CONFIG.apiKey });
 
     let bmr: number;
