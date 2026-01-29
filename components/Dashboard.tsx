@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AIResponse, Meal, MonthPlan } from '../types';
-import { Lock, Download, Droplets, Flame, Activity, Zap, ChevronDown, ChevronUp, ShoppingCart, Utensils, Leaf, AlertTriangle, Speaker, Pill, ClipboardList, Wallet, CloudSun, Microwave, Repeat, User, FileText, X, ExternalLink, Loader2, CheckCircle, ChevronRight, Shield } from 'lucide-react';
+import { Lock, Download, Droplets, Flame, Activity, Zap, ChevronDown, ChevronUp, ShoppingCart, Utensils, Leaf, AlertTriangle, Speaker, Pill, ClipboardList, Wallet, CloudSun, Microwave, Repeat, User, FileText, X, ExternalLink, Loader2, CheckCircle, ChevronRight, Shield, Copy } from 'lucide-react';
 import { generatePDF } from '../services/pdfService';
 import { trackEvent } from '../services/supabaseClient'; // Import Tracking
 import { getCheckoutUrl } from '../services/paymentService'; // Import Payment Service
@@ -277,6 +277,18 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
         if (userId) {
             trackEvent(userId, 'download_pdf', { fileName: `${plan.userStats.name}_Plan.pdf` });
         }
+    };
+
+    const handleCopyShoppingList = () => {
+        playPop();
+        if (!currentGroceries || currentGroceries.length === 0) return;
+
+        const text = `🛒 DietlyPlans Shopping List - ${weekLabel}\n\n` + currentGroceries.map(cat =>
+            `[${cat.category}]\n` + cat.items.map(i => `• ${i}`).join('\n')
+        ).join('\n\n');
+
+        navigator.clipboard.writeText(text);
+        alert("Shopping list copied to clipboard! 📋");
     };
 
     const setMonth = (m: any) => {
@@ -646,7 +658,18 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                                     <ShoppingCart className="w-8 h-8 text-primary" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black text-dark">Shopping List</h3>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-2xl font-black text-dark">Shopping List</h3>
+                                        {isPaid && currentGroceries && currentGroceries.length > 0 && (
+                                            <button
+                                                onClick={handleCopyShoppingList}
+                                                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-primary rounded-full transition-all"
+                                                title="Copy to Clipboard"
+                                            >
+                                                <Copy className="w-5 h-5" />
+                                            </button>
+                                        )}
+                                    </div>
                                     <p className="text-slate-400 font-medium">Items for {weekLabel}</p>
                                 </div>
                             </div>

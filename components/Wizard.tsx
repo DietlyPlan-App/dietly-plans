@@ -160,6 +160,49 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         return; // HALT
       }
 
+      // EDGE CASE FIXES: NEW CONFLICT LOGIC
+      const isGLP1 = /ozempic|wegovy|mounjaro|semaglutide|victoza|saxenda/i.test(conditions);
+
+      // CONFLICT: PREGNANT + LEFTOVERS (Listeria)
+      if (formData.isPregnant && formData.mealStrategy === 'leftovers') {
+        setConflictMessage({
+          title: "⚠️ Pregnancy Food Safety (Listeria)",
+          description: "You selected 'Evening Prep' (Leftovers) but are Pregnant. Reheating leftovers poses a higher Listeria risk. We strongly recommend switching to 'Fresh Meals' to ensure food safety for you and the baby."
+        });
+        setShowConflictModal(true);
+        return;
+      }
+
+      // CONFLICT: BARIATRIC + KETO (Fat Malabsorption)
+      if (isBariatric && isKeto) {
+        setConflictMessage({
+          title: "⚠️ Bariatric / Keto Conflict",
+          description: "High-fat Keto diets can cause severe 'dumping syndrome' and malabsorption after gastric surgery. We recommend switching to a 'High Protein' or 'Balanced' diet type."
+        });
+        setShowConflictModal(true);
+        return;
+      }
+
+      // CONFLICT: GLP-1 + LOW BUDGET (Protein Affordability)
+      if (isGLP1 && formData.budgetAmount < 50) {
+        setConflictMessage({
+          title: "⚠️ GLP-1 / Budget Warning",
+          description: "GLP-1 medications (Ozempic/Wegovy) require high protein (100g+) to prevent muscle loss. Achieving this on a budget under $50/week is extremely difficult. We recommend increasing budget slightly or prioritizing eggs/canned fish."
+        });
+        setShowConflictModal(true);
+        return;
+      }
+
+      // CONFLICT: ZERO BUDGET (Info Only)
+      if (formData.budgetAmount === 0 && !isGLP1 && !formData.isPregnant) { // Don't double trigger
+        setConflictMessage({
+          title: "ℹ️ Zero Budget Strategy",
+          description: "With a $0 budget, the AI will generate a strict 'Survival' plan focusing on food bank staples (Rice, Beans, Oil). Expect simple, repetitive meals."
+        });
+        setShowConflictModal(true);
+        return;
+      }
+
       // CONFLICT 4: ULTRA-LOW BUDGET
       if (formData.budgetAmount < 20) {
         setConflictMessage({
@@ -179,6 +222,13 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
     if (!formData.name.trim()) {
       alert("Please enter your name.");
+      return;
+    }
+
+    // Email Regex Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email)) {
+      alert("Please enter a valid email address.");
       return;
     }
 

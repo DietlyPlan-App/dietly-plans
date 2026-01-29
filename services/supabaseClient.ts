@@ -163,9 +163,14 @@ export const checkRateLimit = async (userId: string): Promise<{
       .gte('created_at', todayISO);
 
     if (error) {
-      devWarn("Rate limit check error:", error.message);
-      // On error, allow generation but warn
-      return { allowed: true, remaining: DAILY_GENERATION_LIMIT, generationsToday: 0, resetTime: getNextResetTime() };
+      devError("Rate limit check CRITICAL error:", error.message);
+      // SECURITY: Fail closed - don't allow generation if we can't verify
+      return {
+        allowed: false,
+        remaining: 0,
+        generationsToday: DAILY_GENERATION_LIMIT,
+        resetTime: getNextResetTime()
+      };
     }
 
     const generationsToday = count || 0;
@@ -179,8 +184,13 @@ export const checkRateLimit = async (userId: string): Promise<{
       resetTime: getNextResetTime()
     };
   } catch (e) {
-    devWarn("Rate limit check failed:", e);
-    return { allowed: true, remaining: DAILY_GENERATION_LIMIT, generationsToday: 0, resetTime: getNextResetTime() };
+    devError("Rate limit check CRITICAL failure:", e);
+    return {
+      allowed: false,
+      remaining: 0,
+      generationsToday: DAILY_GENERATION_LIMIT,
+      resetTime: getNextResetTime()
+    };
   }
 };
 

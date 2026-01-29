@@ -49,8 +49,19 @@ serve(async (req) => {
         // Call Gemini API using REST endpoint (more reliable than SDK in Edge Functions)
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+        // SECURITY: Basic Jailbreak Prevention
+        const sanitize = (str: string) => {
+            if (typeof str !== 'string') return "";
+            return str
+                .replace(/ignore (previous|all|above) instructions/gi, "[BLOCKED]")
+                .replace(/forget (everything|all)/gi, "[BLOCKED]")
+                .replace(/system override/gi, "[BLOCKED]")
+                .replace(/simulat(e|ing) mode/gi, "[BLOCKED]");
+        };
+        const safePrompt = sanitize(prompt);
+
         const geminiBody: any = {
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            contents: [{ role: "user", parts: [{ text: safePrompt }] }],
             generationConfig: {
                 maxOutputTokens: maxTokens,
                 responseMimeType: "application/json",

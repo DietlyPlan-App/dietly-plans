@@ -7,6 +7,7 @@ values ('plans', 'plans', false)
 on conflict (id) do nothing;
 
 -- 2. Policy: Allow Users to Upload (INSERT) to their own folder
+drop policy if exists "Users can upload own plan PDFs" on storage.objects;
 create policy "Users can upload own plan PDFs"
 on storage.objects for insert
 with check (
@@ -15,6 +16,7 @@ with check (
 );
 
 -- 3. Policy: Allow Users to View (SELECT) their own PDFs
+drop policy if exists "Users can view own plan PDFs" on storage.objects;
 create policy "Users can view own plan PDFs"
 on storage.objects for select
 using (
@@ -23,6 +25,7 @@ using (
 );
 
 -- 4. Policy: Allow Users to Update (Overwrite) their own PDFs
+drop policy if exists "Users can update own plan PDFs" on storage.objects;
 create policy "Users can update own plan PDFs"
 on storage.objects for update
 using (
@@ -31,6 +34,7 @@ using (
 );
 
 -- 5. Policy: Allow Users to Delete their own PDFs
+drop policy if exists "Users can delete own plan PDFs" on storage.objects;
 create policy "Users can delete own plan PDFs"
 on storage.objects for delete
 using (

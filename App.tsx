@@ -265,6 +265,7 @@ const App: React.FC = () => {
       setPlan(null); // Clear state
       safeLocalStorage.removeItem('dietly_plan'); // Clear storage
       safeLocalStorage.removeItem('dietly_step');
+      localStorage.removeItem('intro_timer'); // Clear timer
       if (session) trackEvent(session.user.id, 'app_reset_clicked');
     } else {
       devLog("🟡 User cancelled reset");

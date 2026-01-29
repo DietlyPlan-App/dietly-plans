@@ -100,7 +100,17 @@ const calculateTDEE = (bmr: number, activity: string): number => {
 };
 
 // --- BIOLOGICAL MACRO CALCULATOR ---
-export const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overrides: { isRenal: boolean, isGeriatric: boolean, isNoGallbladder: boolean, isDiabetic: boolean, isGLP1: boolean }): MacroSplit => {
+export const calculateOptimalMacros = (stats: UserStats, targetCalories: number, overrides: {
+    isRenal: boolean,
+    isGeriatric: boolean,
+    isNoGallbladder: boolean,
+    isDiabetic: boolean,
+    isGLP1: boolean,
+    isPKU?: boolean,
+    isPCOS?: boolean,
+    isMenopauseAge?: boolean,
+    isGestationalDiabetes?: boolean
+}): MacroSplit => {
     // 1. MACRO SPLIT STRATEGY (Percentage Based)
     let pSplit = 0.30;
     let fSplit = 0.30;
@@ -129,8 +139,18 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
 
     // 2. MEDICAL OVERRIDES (CONFLICT RESOLUTION MATRIX)
 
+    // CRITICAL: PKU (Phenylketonuria) - MUST BE FIRST (Prevalence: 1 in 24,000)
+    // PKU patients CANNOT metabolize phenylalanine - high protein is DEADLY
+    if (overrides.isPKU) {
+        pSplit = 0.10; // STRICT 10% protein cap - all from Phe-free sources
+        cSplit = 0.55; // Higher carbs from low-Phe sources
+        fSplit = 0.35;
+        // Note: This OVERRIDES all other protein adjustments
+        console.warn("⚠️ CRITICAL: PKU detected. Enforcing 10% protein maximum.");
+    }
+
     // A. GALLBLADDER vs KETO
-    if (overrides.isNoGallbladder && fSplit > 0.40) {
+    if (!overrides.isPKU && overrides.isNoGallbladder && fSplit > 0.40) {
         // Force cap fat at 40% to prevent malabsorption
         const fatExcess = fSplit - 0.40;
         fSplit = 0.40;
@@ -139,27 +159,37 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
     }
 
     // B. RENAL vs KETO/HIGH PROTEIN/GERIATRIC
-    // Renal Safety Trumps ALL.
-    if (overrides.isRenal) {
+    // Renal Safety Trumps ALL (except PKU which is already handled).
+    if (overrides.isRenal && !overrides.isPKU) {
         pSplit = Math.min(pSplit, 0.15); // Strict 15% Cap
         if (cSplit < 0.35) cSplit = 0.35; // Minimum 35% Carb for metabolic stability
         fSplit = 1.0 - (pSplit + cSplit);
     }
-    // C. GERIATRIC (Only if NOT Renal)
-    else if (overrides.isGeriatric) {
-        // CORRECTION (Fix B.2):
-        // Old Logic: Force 35% Protein (Too high, risk of renal stress).
-        // New Logic: Target ~1.2g/kg. On standard diet this is ~20-25%.
-        // We set 25% as the baseline floor, but do NOT force it if diet is lower (like Vegan).
-        // Actually, we want to ensure Sarcopenia protection without Overdose.
-        pSplit = 0.25; // Moderate Protein (Safe Zone)
+    // C. GERIATRIC (Only if NOT Renal and NOT PKU) - SARCOPENIA PREVENTION
+    else if (overrides.isGeriatric && !overrides.isPKU) {
+        // Elderly need higher protein (1.0-1.2g/kg) to prevent muscle loss
+        // Research: At least 25-30% protein for sarcopenia prevention
+        if (pSplit < 0.30) {
+            pSplit = 0.30; // Minimum 30% protein for sarcopenia prevention
+        }
         if (pSplit + fSplit + cSplit > 1.0) {
             cSplit = 1.0 - (pSplit + fSplit);
         }
     }
 
-    // D. DIABETES / INSULIN RESISTANCE (New Remediation)
-    if (overrides.isDiabetic) {
+    // D. PCOS (Polycystic Ovary Syndrome) - LOW GLYCEMIC INDEX
+    // Affects 8-13% of women - insulin resistance requires lower carbs
+    if (overrides.isPCOS && !overrides.isPKU && !overrides.isRenal) {
+        if (cSplit > 0.35) {
+            const carbExcess = cSplit - 0.35;
+            cSplit = 0.35; // Cap at 35% carbs for insulin sensitivity
+            pSplit += (carbExcess * 0.6); // Increase protein
+            fSplit += (carbExcess * 0.4); // Increase healthy fats
+        }
+    }
+
+    // E. DIABETES / INSULIN RESISTANCE (New Remediation)
+    if (overrides.isDiabetic && !overrides.isPKU) {
         if (cSplit > 0.35) {
             const carbExcess = cSplit - 0.35;
             cSplit = 0.35; // Cap at 35%
@@ -168,8 +198,18 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
         }
     }
 
-    // E. GLP-1 AGONIST (Ozempic/Wegovy) Safety
-    if (overrides.isGLP1) {
+    // F. GESTATIONAL DIABETES - STRICTER THAN REGULAR DIABETES
+    if (overrides.isGestationalDiabetes && !overrides.isPKU) {
+        if (cSplit > 0.30) {
+            const carbExcess = cSplit - 0.30;
+            cSplit = 0.30; // Stricter 30% cap for pregnancy
+            pSplit += (carbExcess * 0.7); // Higher protein for fetal development
+            fSplit += (carbExcess * 0.3);
+        }
+    }
+
+    // G. GLP-1 AGONIST (Ozempic/Wegovy) Safety
+    if (overrides.isGLP1 && !overrides.isPKU) {
         pSplit = Math.max(pSplit, 0.40); // Force VERY HIGH Protein (40%) to prevent muscle wasting
         if (pSplit + fSplit + cSplit > 1.0) {
             // Reduce carbs/fat proportionally
@@ -205,7 +245,9 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
 
 const ALLERGY_MAP: Record<string, string[]> = {
     'gluten': ['wheat', 'rye', 'barley', 'malt', 'seitan', 'soy sauce', 'bread', 'pasta', 'flour', 'beer'],
+    // Separate Lactose (intolerance) from true Dairy Allergy
     'dairy': ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'whey', 'casein', 'ghee', 'lactose'],
+    'lactose': ['milk', 'cream', 'ice cream', 'soft cheese', 'ricotta', 'mozzarella', 'fresh cheese'],
     'nut': ['peanut', 'almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'macadamia', 'hazelnut'],
     'peanut': ['satay', 'arachis'],
     'egg': ['albumin', 'mayonnaise', 'meringue'],
@@ -627,14 +669,28 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     // ROUND 11: CHEMICAL DRUG INTERACTIONS (FINAL AUDIT)
     const isWarfarin = containsCondition(combinedHealthText, /warfarin|coumadin|jantoven|blood thinner/i);
     const isMAOI = containsCondition(combinedHealthText, /maoi|nardil|parnate|marplan|selegiline/i);
-    const isGrapefruitSensitive = containsCondition(combinedHealthText, /statin|lipitor|zocor|simvastatin|atorvastatin|transplant|cyclosporine|nifedipine/i);
+    const isGrapefruitSensitive = containsCondition(combinedHealthText, /statin|lipitor|zocor|simvastatin|atorvastatin|transplant|cyclosporine|tacrolimus|prograf|sirolimus|rapamune|nifedipine|buspirone|carbamazepine/i);
     const isBisphosphonate = containsCondition(combinedHealthText, /fosamax|alendronate|boniva/i);
+    const isNSAID = containsCondition(combinedHealthText, /nsaid|aspirin|ibuprofen|advil|motrin|naproxen|aleve/i);
 
     // REMEDIATION: ADVANCED DRUG DETECTION
     const isDiabetic = isDiabetes; // Alias for consistency
     const isGLP1 = containsCondition(combinedHealthText, /ozempic|wegovy|mounjaro|semaglutide|saxenda/i);
     const isLithium = containsCondition(combinedHealthText, /lithium|lithobid/i);
     const isShiftWorker = containsCondition(combinedHealthText, /shift|night|graveyard|rotation/i);
+
+    // EDGE CASE FIX: Additional Condition Detections
+    // PCOS (Polycystic Ovary Syndrome) - Affects 8-13% of women
+    const isPCOS = containsCondition(combinedHealthText, /pcos|polycystic|ovarian syndrome/i);
+
+    // ACE Inhibitors - Risk of hyperkalemia (11% of patients)
+    const isACEInhibitor = containsCondition(combinedHealthText, /lisinopril|enalapril|ramipril|benazepril|captopril|perindopril|quinapril|ace inhibitor|\bace\s*-?\s*i\b/i);
+
+    // DOACs (Modern Blood Thinners) - Different from Warfarin
+    const isDOAC = containsCondition(combinedHealthText, /eliquis|apixaban|xarelto|rivaroxaban|pradaxa|dabigatran|edoxaban|savaysa/i);
+
+    // Menopause/Perimenopause detection (for women 45-60)
+    const isMenopauseAge = stats.gender === 'female' && stats.age >= 45 && stats.age <= 60 && !stats.isPregnant && !stats.isBreastfeeding;
 
     // RULE 1: HISTAMINE OVERRIDES LEFTOVERS
     if (isHistamineIntolerant && stats.mealStrategy === 'leftovers') {
@@ -725,7 +781,13 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
     }
 
-    const macroTargets = calculateOptimalMacros(stats, calorieTarget, { isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1 });
+    // Detect gestational diabetes (pregnant + diabetic)
+    const isGestationalDiabetes = stats.isPregnant && isDiabetic;
+
+    const macroTargets = calculateOptimalMacros(stats, calorieTarget, {
+        isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1,
+        isPKU, isPCOS, isMenopauseAge, isGestationalDiabetes
+    });
 
     if (isNoGallbladder && stats.dietType === 'Keto' && onProgress) {
         onProgress("Medical Override: Gallbladder removal detected. Soft-blocking Keto (70% Fat) -> Low Carb (40% Fat).");
@@ -977,6 +1039,74 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             }
         }
 
+        // --- EDGE CASE FIX: NEW SAFETY DIRECTIVES ---
+
+        // CRITICAL: PKU (Phenylketonuria)
+        if (isPKU) {
+            safetyDirectives += "⚠️ CRITICAL PKU PROTOCOL: STRICT LOW-PHENYLALANINE DIET. NO meat, fish, eggs, dairy, nuts, seeds, legumes, wheat, oats, soy, or aspartame (Equal, NutraSweet). ALL PROTEIN MUST COME FROM PHE-FREE MEDICAL FORMULA. Use PKU-approved low-protein specialty foods only. ";
+        }
+
+        // PCOS (Polycystic Ovary Syndrome) - 8-13% of women
+        if (isPCOS) {
+            safetyDirectives += "PCOS PROTOCOL: LOW GLYCEMIC INDEX FOODS ESSENTIAL for insulin sensitivity. AVOID white bread, white rice, sugary drinks, processed snacks. PRIORITIZE whole grains (quinoa, oats), legumes, lean proteins, leafy greens. ANTI-INFLAMMATORY focus (omega-3, turmeric). LIMIT dairy if hormone-sensitive. ";
+        }
+
+
+
+        // Warfarin logic (Critical Interaction)
+        if (isWarfarin) {
+            safetyDirectives += "DRUG INTERACTION: WARFARIN DETECTED. MAINTAIN CONSISTENT VITAMIN K INTAKE (Do not drastically increase/decrease greens). ";
+            if (isNSAID) {
+                safetyDirectives += "⚠️ CRITICAL: WARFARIN + NSAID (Aspirin/Ibuprofen) DETECTED. HIGH BLEEDING RISK. CONSULT DOCTOR IMMEDIATELY. ";
+            }
+        }
+
+        // ACE Inhibitors - Risk of Hyperkalemia (11% of patients)
+        if (isACEInhibitor) {
+            safetyDirectives += "⚠️ ACE INHIBITOR DETECTED (Lisinopril/Enalapril/etc): MODERATE POTASSIUM INTAKE to prevent hyperkalemia. LIMIT bananas, oranges, potatoes, tomatoes, avocados, spinach to 1 serving/day maximum. AVOID potassium supplements and salt substitutes (KCl). Monitor for muscle weakness, irregular heartbeat. ";
+        }
+
+        // DOACs (Modern Blood Thinners - Different from Warfarin)
+        if (isDOAC) {
+            safetyDirectives += "DOAC ANTICOAGULANT (Eliquis/Xarelto): Unlike Warfarin, Vitamin K is NOT a concern - eat green vegetables freely. HOWEVER: AVOID grapefruit, pomelo, Seville oranges (increase drug levels → bleeding risk). AVOID large amounts of ginger, garlic, or turmeric supplements. TAKE medication WITH FOOD for better absorption. ";
+        }
+
+        // Gestational Diabetes (8.3% of US pregnancies)
+        if (isGestationalDiabetes) {
+            safetyDirectives += "⚠️ GESTATIONAL DIABETES PROTOCOL: STRICT BLOOD SUGAR CONTROL for fetal safety. NO simple sugars, fruit juice, refined carbs, high-GI breakfast cereals. EAT protein with EVERY meal to slow glucose absorption. SMALL frequent meals (3 meals + 2-3 snacks). Monitor blood glucose after eating. LOW-GI carbs only (whole grains, legumes). ";
+        }
+
+        // Vegan + Pregnant = B12 Critical
+        const isVeganDiet = stats.dietType?.toLowerCase().includes('vegan');
+        if (stats.isPregnant && isVeganDiet) {
+            safetyDirectives += "⚠️ CRITICAL: VEGAN PREGNANCY - B12 SUPPLEMENTATION IS MANDATORY (2.6mcg/day minimum). B12 deficiency causes neural tube defects and developmental issues. Consider algae-based DHA/EPA for fetal brain development. IRON absorption is lower from plant sources - pair iron-rich foods with Vitamin C. ";
+        }
+
+        // Elderly Sarcopenia Prevention (65+)
+        if (isGeriatric && !isRenal) {
+            safetyDirectives += "SARCOPENIA PREVENTION PROTOCOL (65+): Higher protein required (1.0-1.2g/kg) to prevent muscle loss. TARGET 25-30g HIGH-QUALITY PROTEIN per meal. Leucine-rich foods critical (eggs, dairy, chicken, fish). EVEN distribution of protein throughout day. Vitamin D supplementation recommended. ";
+        }
+
+        // Menopause/Perimenopause (Women 45-60)
+        if (isMenopauseAge) {
+            safetyDirectives += "MENOPAUSE NUTRITION: Metabolism naturally decreases (-5% BMR). CALCIUM critical (1200mg/day) for bone density - emphasize dairy, fortified foods, leafy greens. VITAMIN D (600-800 IU/day) required for calcium absorption. REDUCE refined carbs for insulin sensitivity. PHYTOESTROGEN foods may help (soy, flaxseed). ";
+        }
+
+        // Enhanced Celiac Warning
+        if (isCeliac) {
+            safetyDirectives += "CELIAC PROTOCOL ENHANCED: ABSOLUTE ZERO GLUTEN - even trace amounts cause intestinal damage. CHECK ALL LABELS for hidden gluten: 'modified food starch', 'malt', 'hydrolyzed wheat protein', 'soy sauce', beer. OATS must be CERTIFIED gluten-free (cross-contamination common). NO shared cooking surfaces, toasters, or cutting boards. ";
+        }
+
+        // Adolescent Growth Spurt (10-16)
+        if (stats.age >= 10 && stats.age <= 16) {
+            safetyDirectives += "ADOLESCENT GROWTH PHASE: Additional calories allocated for development. CALCIUM and VITAMIN D critical for bone growth. IRON important (especially for females). Adequate protein for muscle development. DO NOT allow extreme caloric restriction. ";
+        }
+
+        // Thyroid Medication Timing
+        if (isThyroid) {
+            safetyDirectives += "THYROID MEDICATION TIMING: Take Levothyroxine on EMPTY STOMACH (30-60 min before food). SEPARATE calcium, iron, antacids, coffee by 4 HOURS to prevent absorption interference. CONSISTENCY in soy intake (affects thyroid levels). ";
+        }
+
         // ... (Other conditions)
 
         return `
@@ -1020,7 +1150,10 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // Safety Floors
         if (stats.goal === 'lose' && m2CalTarget < absoluteFloor) m2CalTarget = absoluteFloor;
 
-        const m2Macros = calculateOptimalMacros(stats, m2CalTarget, { isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1 });
+        const m2Macros = calculateOptimalMacros(stats, m2CalTarget, {
+            isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1,
+            isPKU, isPCOS, isMenopauseAge, isGestationalDiabetes
+        });
         const m2Result = await callGemini(ai, getSafetyProfile(m2CalTarget, m2Macros) + "\nGenerate MONTH 2 (Week 1 Template).", batchNextSchema, 60000);
 
         if (onProgress) onProgress("Finalizing Month 3 (Peak)...");
@@ -1032,7 +1165,10 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // Safety Floors
         if (stats.goal === 'lose' && m3CalTarget < absoluteFloor) m3CalTarget = absoluteFloor;
 
-        const m3Macros = calculateOptimalMacros(stats, m3CalTarget, { isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1 });
+        const m3Macros = calculateOptimalMacros(stats, m3CalTarget, {
+            isRenal, isGeriatric, isNoGallbladder, isDiabetic, isGLP1,
+            isPKU, isPCOS, isMenopauseAge, isGestationalDiabetes
+        });
         const m3Result = await callGemini(ai, getSafetyProfile(m3CalTarget, m3Macros) + "\nGenerate MONTH 3 (Week 1 Template).", batchNextSchema, 60000);
 
         // ROUND 8: USE SAFE WATER
