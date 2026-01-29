@@ -198,6 +198,17 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         return; // HALT
       }
 
+      // CONFLICT: LIVER CIRRHOSIS (Complex)
+      if (conditions.includes('cirrhosis') || conditions.includes('liver failure') || conditions.includes('ascites') || conditions.includes('varices')) {
+        setConflictMessage({
+          title: "⚠️ Medical Complex: Liver Cirrhosis",
+          description: "Liver conditions require very specific nutritional management (fluids, sodium, protein typing). This AI will apply hepatology-safe rules (Low Sodium, Late Snacks), but you MUST consult your specialist. Do not rely solely on this app."
+        });
+        setShowConflictModal(true);
+        // Soft warning - allows 'Proceed Anyway'
+        return;
+      }
+
       // EDGE CASE FIXES: NEW CONFLICT LOGIC
       const isGLP1 = /ozempic|wegovy|mounjaro|semaglutide|victoza|saxenda/i.test(conditions);
 

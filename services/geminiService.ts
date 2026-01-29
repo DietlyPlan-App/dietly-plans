@@ -657,6 +657,8 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
     // NEW CONDITIONS
     const isBariatric = containsCondition(combinedHealthText, /sleeve|gastric|bypass|bariatric/i);
+    const isCirrhosis = containsCondition(combinedHealthText, /cirrhosis|ascites|liver failure|hepatic|varices|esophageal varices/i);
+    const isEncephalopathy = containsCondition(combinedHealthText, /encephalopathy|confusion|ammonia|lactulose/i);
     const isKidneyStones = containsCondition(combinedHealthText, /stone|oxalate|nephrolithiasis/i); // Specific Stone Check
     const isThyroid = containsCondition(combinedHealthText, /thyroid|hypothyroid|hashimoto/i);
     const isCeliac = containsCondition(combinedHealthText, /celiac|gluten|wheat/i);
@@ -1029,6 +1031,16 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
 
         const isPotassiumSparing = /spironolactone|aldactone|triamterene|amiloride/i.test(combinedHealthText);
+
+        // LIVER CIRRHOSIS SAFETY
+        if (isCirrhosis) {
+            if (isEncephalopathy) {
+                safetyDirectives += "⚠️ CRITICAL HEPATIC ENCEPHALOPATHY: TEMPORARY PROTEIN RESTRICTION MAY BE REQUIRED (Consult Doctor). FOCUS ON VEGETABLE/DAIRY PROTEINS (BCAA rich). AVOID RED MEAT (Ammonia genic). TREAT CONSTIPATION AGGRESSIVELY (Fiber + Hydration). ";
+            } else {
+                safetyDirectives += "LIVER CIRRHOSIS PROTOCOL (COMPENSATED): HIGH PROTEIN (1.2-1.5g/kg) PREVENTS MORTALITY. DO NOT RESTRICT PROTEIN. ";
+            }
+            safetyDirectives += "ASCITES MANAGEMENT: STRICT LOW SODIUM (<2000mg). LATE EVENING SNACK (Complex Carb + Protein) MANDATORY to prevent overnight starvation state. NO RAW SHELLFISH/OYSTERS (Vibrio Rule). AVOID ALCOHOL COMPLETELY. ";
+        }
 
         // ROUND 12: HYPERTENSION PROTOCOL (DASH) - UPDATED FOR SPIRONOLACTONE
         if (isHypertension) {
