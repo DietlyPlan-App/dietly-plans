@@ -26,9 +26,10 @@ interface HistoryItem {
 interface HistoryVaultProps {
     userId: string;
     onClose: () => void;
+    onNewPlan?: () => void;
 }
 
-export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) => {
+export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose, onNewPlan }) => {
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [generatingId, setGeneratingId] = useState<number | null>(null);
@@ -129,7 +130,7 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose }) =
                             <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm -rotate-3 text-emerald-500">🕸️</div>
                             <h3 className="text-slate-900 font-black text-base mb-1">The Vault is empty</h3>
                             <p className="text-slate-500 text-xs mb-6 leading-relaxed max-w-[180px] mx-auto">Generate your first plan to start building history.</p>
-                            <button onClick={onClose} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-sm">
+                            <button onClick={onNewPlan || onClose} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all text-sm">
                                 Generate New Plan
                             </button>
                         </div>

@@ -290,6 +290,10 @@ const App: React.FC = () => {
       setPlan(null); // Clear state
       safeLocalStorage.removeItem('dietly_plan'); // Clear storage
       safeLocalStorage.removeItem('dietly_step');
+      // FIX: Also clear wizard form state
+      safeLocalStorage.removeItem('dietly_wizard_data');
+      safeLocalStorage.removeItem('dietly_wizard_step');
+      safeLocalStorage.removeItem('dietly_pending_wizard_data');
       localStorage.removeItem('intro_timer'); // Clear timer
       if (session) trackEvent(session.user.id, 'app_reset_clicked');
     } else {
@@ -428,7 +432,7 @@ const App: React.FC = () => {
         {/* HISTORY VAULT MODAL */}
         {showHistory && session && (
           <Suspense fallback={<LoadingFallback />}>
-            <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} />
+            <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} onNewPlan={() => { setShowHistory(false); resetApp(); }} />
           </Suspense>
         )}
 
