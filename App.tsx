@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Wizard from './components/Wizard';
 import Auth from './components/Auth'; // Import Auth
+import { Legal } from './components/Legal'; // Import Legal
 import { generateMealPlan } from './services/geminiService';
 import { supabase, trackEvent, saveHistory, uploadPDF, checkRateLimit, trackGenerationStart, formatTimeUntilReset } from './services/supabaseClient'; // Import Client & Tracking
 import { generatePDFBlob } from './services/pdfService'; // NEW: Vault Blob Generator
@@ -28,7 +29,7 @@ const LoadingFallback = () => (
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null); // Track User Session
-  const [currentStep, setCurrentStep] = useState<'wizard' | 'loading' | 'dashboard'>(() => {
+  const [currentStep, setCurrentStep] = useState<'wizard' | 'loading' | 'dashboard' | 'legal'>(() => {
     // RESTORE STEP FROM LOCAL STORAGE
     const saved = safeLocalStorage.getItem('dietly_step');
     return (saved as any) || 'wizard';
@@ -392,7 +393,10 @@ const App: React.FC = () => {
               </button>
               <Auth onLogin={() => {
                 setShowAuthModal(false);
-              }} isModal={true} />
+              }} isModal={true} onShowLegal={() => {
+                setShowAuthModal(false);
+                setCurrentStep('legal');
+              }} />
             </div>
           </div>
         )}
@@ -402,6 +406,14 @@ const App: React.FC = () => {
           <Suspense fallback={<LoadingFallback />}>
             <HistoryVault userId={session.user.id} onClose={() => setShowHistory(false)} />
           </Suspense>
+        )}
+
+        {/* LEGAL PAGE OVERLAY */}
+        {currentStep === 'legal' && (
+          <Legal onBack={() => {
+            if (plan && session) setCurrentStep('dashboard');
+            else setCurrentStep('wizard');
+          }} />
         )}
 
         {/* PAYMENT SUCCESS CELEBRATION */}
@@ -429,7 +441,9 @@ const App: React.FC = () => {
       </main>
 
       <footer className="text-center p-8 text-slate-400 text-sm font-medium">
-        &copy; 2025 DietlyPlans AI. Not medical advice. Data processed by AI. By using this app, you acknowledge anonymized processing.
+        <button onClick={() => setCurrentStep('legal')} className="hover:text-primary transition-colors hover:underline">
+          &copy; 2025 DietlyPlans AI. Not medical advice. View Terms & Privacy.
+        </button>
       </footer>
 
       <style>{`
