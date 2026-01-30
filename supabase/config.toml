@@ -1,0 +1,2 @@
+[functions.dodo-webhook]
+verify_jwt = false
