@@ -85,8 +85,10 @@ serve(async (req) => {
       throw new Error(`Missing Server Configuration (DODO KEYS). PlanType: ${planType}`);
     }
 
-    // AUTO-DETECT ENVIRONMENT
-    const isTestMode = DODO_API_KEY.includes('.test.') || DODO_API_KEY.startsWith('test_');
+    // USE EXPLICIT ENVIRONMENT MODE (set during deployment)
+    // Fallback: check if key looks like test format
+    const explicitMode = Deno.env.get('DODO_MODE'); // 'test' or 'live'
+    const isTestMode = explicitMode === 'test' || DODO_API_KEY.includes('.test.') || DODO_API_KEY.startsWith('test_');
     const dodoBaseUrl = isTestMode
       ? 'https://test.dodopayments.com'
       : 'https://live.dodopayments.com';

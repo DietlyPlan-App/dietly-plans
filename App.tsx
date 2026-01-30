@@ -118,6 +118,30 @@ const App: React.FC = () => {
       setShowPaymentSuccess(true);
       // Clean URL
       window.history.replaceState({}, document.title, "/");
+
+      // CRITICAL FIX: Re-fetch user data after payment to get updated is_paid status
+      // Add a small delay to allow webhook to process
+      const refetchAfterPayment = async () => {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for webhook
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession?.user?.id) {
+          devLog("Refetching user data after payment success...");
+          const { data, error } = await supabase
+            .from('plans')
+            .select('*')
+            .eq('user_id', currentSession.user.id)
+            .single();
+
+          if (data && !error) {
+            if (data.is_paid) {
+              setIsPaid(true);
+              setPlanTier(data.plan_tier || 'full');
+              devLog("✅ Payment confirmed! User unlocked.");
+            }
+          }
+        }
+      };
+      refetchAfterPayment();
     }
   }, []);
 
