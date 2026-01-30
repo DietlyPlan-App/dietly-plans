@@ -92,10 +92,28 @@ export const calculatePediatricBMR = (weightKg: number, age: number, gender: str
     }
 };
 
-const calculateTDEE = (bmr: number, activity: string): number => {
-    const multipliers: Record<string, number> = {
-        'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'active': 1.725, 'athlete': 1.9
-    };
+const calculateTDEE = (bmr: number, activity: string, age: number = 30): number => {
+    // P2 FIX BUG-017: ELDERLY ACTIVITY MULTIPLIER CAP
+    // Elderly users (65+, 75+) have lower actual energy expenditure even at same activity level
+    let multipliers: Record<string, number>;
+
+    if (age >= 75) {
+        // 75+ severe cap - prevent overestimation for very elderly
+        multipliers = {
+            'sedentary': 1.2, 'light': 1.3, 'moderate': 1.4, 'active': 1.5, 'athlete': 1.55
+        };
+    } else if (age >= 65) {
+        // 65-74 moderate cap
+        multipliers = {
+            'sedentary': 1.2, 'light': 1.35, 'moderate': 1.5, 'active': 1.6, 'athlete': 1.7
+        };
+    } else {
+        // Standard multipliers for <65
+        multipliers = {
+            'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'active': 1.725, 'athlete': 1.9
+        };
+    }
+
     return Math.round(bmr * (multipliers[activity] || 1.2));
 };
 
@@ -253,7 +271,19 @@ const ALLERGY_MAP: Record<string, string[]> = {
     'egg': ['albumin', 'mayonnaise', 'meringue'],
     'soy': ['tofu', 'tempeh', 'edamame', 'miso', 'soya', 'tamari'],
     'shellfish': ['shrimp', 'crab', 'lobster', 'prawn', 'mussel', 'oyster', 'clam', 'scallop'],
-    'seafood': ['fish', 'tuna', 'salmon', 'cod', 'tilapia', 'shrimp', 'crab', 'lobster']
+    'seafood': ['fish', 'tuna', 'salmon', 'cod', 'tilapia', 'shrimp', 'crab', 'lobster'],
+
+    // P1 FIX BUG-010: EXPANDED ALLERGEN LIST (EU/FDA Standard Top Allergens)
+    'sesame': ['tahini', 'hummus', 'halva', 'sesame oil', 'benne seeds', 'gingelly', 'sesame seeds'],
+    'mustard': ['dijon', 'mustard seed', 'mustard oil', 'mustard greens', 'mustard powder'],
+    'celery': ['celeriac', 'celery salt', 'celery seed', 'lovage'],
+    'lupin': ['lupin flour', 'lupini beans', 'lupin protein'],
+    'coconut': ['coconut oil', 'coconut milk', 'coconut cream', 'copra', 'desiccated coconut', 'coconut water'],
+    'corn': ['maize', 'cornstarch', 'corn syrup', 'polenta', 'hominy', 'masa', 'dextrose', 'maltodextrin'],
+    'nightshade': ['tomato', 'potato', 'eggplant', 'bell pepper', 'chili', 'paprika', 'goji', 'cayenne'],
+    'allium': ['onion', 'garlic', 'leek', 'shallot', 'chives', 'scallion', 'spring onion'],
+    'sulfite': ['wine', 'dried fruit', 'pickled foods', 'vinegar', 'processed meats', 'molasses'],
+    'histamine': ['aged cheese', 'wine', 'sauerkraut', 'fermented foods', 'smoked fish', 'avocado', 'spinach', 'tomato', 'vinegar', 'alcohol'],
 };
 
 export const runSafetyWatchdog = (meal: Meal, allergies: string): Meal => {
@@ -538,7 +568,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         logAdjustment("Medical Adjustment: -5% BMR reduction applied for Thyroid condition context.");
     }
 
-    let tdee = calculateTDEE(bmr, stats.activity);
+    let tdee = calculateTDEE(bmr, stats.activity, stats.age);
 
     // --- DIURETIC / CHEMICAL HYDRATION FACTOR ---
     const isDiureticUser = /coffee|caffeine|spironolactone|furosemide|lasix/i.test(combinedHealthCheck);
@@ -645,6 +675,21 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
     // 2. DIABETES (Negation Aware)
     const isDiabetes = containsCondition(combinedHealthText, /\bdiabetes\b|\bdiabetic\b|\binsulin\b|\bmetformin\b/i);
+
+    // P0 FIX BUG-003: TYPE 1 vs TYPE 2 DIABETES DIFFERENTIATION
+    // Type 1 = Insulin-dependent, cannot metabolize carbs, HIGH DKA RISK with Keto
+    // Type 2 = Often Metformin-controlled, CAN safely do Keto under supervision
+    const isType1Diabetes = containsCondition(combinedHealthText, /type.?1|t1d|insulin.?dependent|juvenile.?diabetes|iddm/i) &&
+        !containsCondition(combinedHealthText, /type.?2|t2d|metformin|glipizide|januvia|ozempic/i);
+    const isType2Diabetes = containsCondition(combinedHealthText, /type.?2|t2d|metformin|glipizide|januvia|jardiance|farxiga|invokana|ozempic|wegovy/i) ||
+        (isDiabetes && !isType1Diabetes); // Default to Type 2 if generic "diabetes" mentioned
+
+    // CRITICAL SAFETY: Type 1 + Keto = Diabetic Ketoacidosis (DKA) Risk
+    if (isType1Diabetes && stats.dietType.toLowerCase().includes('keto')) {
+        console.error("⛔ CRITICAL SAFETY: Type 1 Diabetes + Keto = DKA RISK. Overriding to Low-Glycemic Balanced.");
+        stats.dietType = 'Low Carb'; // Force safer alternative
+        if (onProgress) onProgress("⚠️ Medical Override: Type 1 Diabetes detected. Keto is contraindicated (DKA risk). Switching to Low-Carb Balanced diet.");
+    }
 
     const isHistamineIntolerant = containsCondition(combinedHealthText, /histamine|dao|mast cell|mcas/i);
     const isNoGallbladder = containsCondition(combinedHealthText, /gallbladder|cholecystectomy|bile/i);
@@ -819,11 +864,35 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // MAOI aliases
         if (/maoi|nardil|phenelzine|parnate|tranylcypromine|marplan|isocarboxazid|emsam|selegiline/i.test(combinedHealthText)) {
             safetyDirectives += "CRITICAL WARNING: PATIENT ON MAOIs. LOW TYRAMINE DIET REQUIRED (No Aged Cheese, Cured Meats, Fermented Foods). ";
+
+            // P0 FIX BUG-006: MAOI + KETO = TYRAMINE CRISIS RISK
+            // Keto relies heavily on aged cheese, avocados, fermented foods - ALL high tyramine
+            if (stats.dietType.toLowerCase().includes('keto')) {
+                safetyDirectives += "⛔ DIET OVERRIDE REQUIRED: KETO IS INCOMPATIBLE WITH MAOI MEDICATION. Keto relies on aged cheese, avocados, and fermented foods which are HIGH TYRAMINE. HYPERTENSIVE CRISIS RISK. Generating HIGH-PROTEIN BALANCED diet instead. ";
+                stats.dietType = 'High Protein'; // Force override
+                if (onProgress) onProgress("⚠️ Safety Override: MAOI + Keto is dangerous. Switching to High-Protein Balanced diet.");
+            }
         }
 
         // 2. RENAL
         if (isRenal) {
             safetyDirectives += "CRITICAL RENAL DIET: RESTRICT POTASSIUM (No Bananas, Potatoes, Tomatoes, Avocados) & PHOSPHORUS. LOW SODIUM. ";
+        }
+
+        // P0 FIX BUG-005: ACE INHIBITOR + HIGH POTASSIUM DIET = HYPERKALEMIA RISK
+        // ACE inhibitors reduce aldosterone → potassium retention
+        // DASH diet = 4700mg potassium/day → combined risk of hyperkalemia (cardiac arrhythmia)
+        if (isACEInhibitor) {
+            const isHighPotassiumDiet = /dash/i.test(stats.dietType) ||
+                containsCondition(combinedHealthText, /high.?potassium|hypertension|blood.?pressure/i);
+
+            if (isHighPotassiumDiet) {
+                safetyDirectives += "⚠️ POTASSIUM MONITORING REQUIRED: ACE Inhibitor + High-Potassium Diet detected. ACE inhibitors cause potassium retention. MODERATE potassium intake (target 3000-3500mg/day, NOT 4700mg standard DASH). AVOID: Salt substitutes (KCl), potassium supplements. LIMIT: Bananas, oranges, potatoes, tomatoes to 1 serving each per day. Must have serum potassium monitored by physician. ";
+
+                if (isRenal) {
+                    safetyDirectives += "⛔ HIGH RISK: Renal issues + ACE medication. Further limit potassium to 2000-2500mg/day. This is a MEDICAL DIETITIAN case - recommend physician oversight. ";
+                }
+            }
         }
 
         // 3. IBD/IBS (FODMAP)
@@ -852,6 +921,56 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
         if (isG6PD) {
             safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
+        }
+
+        // --- P1 FIXES: ADDITIONAL DRUG INTERACTIONS & CONDITIONS ---
+
+        // P1 FIX BUG-007: LITHIUM + LOW SODIUM = TOXICITY
+        // Lithium is renally excreted. Low sodium causes increased lithium reabsorption → toxicity
+        if (isLithium) {
+            const isLowSodiumIntent = /dash|low.?sodium|salt.?restricted/i.test(stats.dietType + combinedHealthText);
+            if (isLowSodiumIntent) {
+                safetyDirectives += "⛔ LITHIUM SAFETY ALERT: Low-sodium diets cause lithium toxicity (increased reabsorption). MAINTAIN normal sodium intake (2300-3000mg/day, NOT <1500mg). Ensure CONSISTENT sodium intake day-to-day. Symptoms of toxicity: tremor, confusion, vomiting - seek emergency care immediately. ";
+            }
+        }
+
+        // P1 FIX BUG-008: INSULIN TIMING GUIDANCE
+        // Rapid-acting insulin peaks in 30-60 minutes. Food must be eaten to prevent hypoglycemia.
+        const isOnInsulin = /insulin|humalog|novolog|apidra|fiasp|lantus|levemir|tresiba|toujeo|basaglar/i.test(combinedHealthText);
+        if (isOnInsulin) {
+            safetyDirectives += "⏰ INSULIN TIMING CRITICAL: Eat within 15-30 minutes of rapid-acting insulin injection. ALWAYS have fast-acting glucose available (juice, glucose tablets). Include 15-20g carbs at each meal for insulin matching. Night snack REQUIRED if taking long-acting insulin at bedtime. ";
+        }
+
+        // P1 FIX BUG-009: GASTROPARESIS MEAL STRUCTURE
+        // 5-8 small meals, low fiber, low fat, upright position recommended
+        if (isGastroparesis) {
+            // Force snacks on for gastroparesis patients
+            stats.includeSnacks = true;
+            safetyDirectives += "🍽️ GASTROPARESIS MEAL STRUCTURE: GENERATE 6 small meals/snacks per day (FORCED - ignore user meal count preference). PORTION: Each meal = 1-1.5 cup maximum. TEXTURE: Soft, well-cooked, or pureed foods preferred. AVOID: Raw vegetables, high-fiber, fatty foods, carbonation. TIMING: Space meals 2-3 hours apart. POSITION: Recommend remaining upright 1-2 hours after eating. ";
+            if (onProgress) onProgress("Medical Override: Gastroparesis detected. Forcing 6 small meals for proper gastric emptying.");
+        }
+
+        // P1 FIX BUG-011: PKU + VEGAN CRITICAL WARNING
+        // Vegan proteins (soy, legumes, seitan) are HIGH in phenylalanine. PKU requires Phe-free formula.
+        if (isPKU && (stats.dietType.includes('Vegan') || stats.dietType.includes('Vegetarian'))) {
+            safetyDirectives += "⛔ PKU + VEGAN CRITICAL WARNING: Standard vegan proteins (soy, legumes, seitan, nuts) are HIGH in phenylalanine. User MUST be using PKU-specific protein formula (Phe-free). Allowed: Low-protein specialty foods, fruits, most vegetables, tapioca, cassava. AVOID: Soy, tempeh, seitan, legumes, nuts, aspartame. This diet REQUIRES metabolic dietitian supervision. Daily Phe intake must stay under 300-500mg (varies by tolerance). ";
+        }
+
+        // P1 FIX BUG-012: GLP-1 + VEGAN PROTEIN STRATEGIES
+        // GLP-1 agonists require high protein (1.2-1.5g/kg) to prevent muscle loss
+        if (isGLP1 && (stats.dietType.includes('Vegan') || stats.dietType.includes('Vegetarian'))) {
+            safetyDirectives += "💪 GLP-1 + VEGAN PROTEIN STRATEGY: Target 1.2-1.5g protein per kg body weight (higher than standard vegan). PRIORITIZE: Pea protein isolate, soy (tofu, tempeh, edamame), seitan, hemp seeds. EACH MEAL: Must include 25-30g protein minimum. Spacing: Protein with every meal and snack. SUPPLEMENT: Consider vegan protein powder (pea + rice blend). Monitor: Muscle mass and strength - report any weakness to doctor. ";
+        }
+
+        // P1 FIX BUG-015: POLYPHARMACY WARNING (5+ Medications)
+        const countMedications = (meds: string): number => {
+            if (!meds) return 0;
+            const medList = meds.split(/[,;|\n]/).filter(m => m.trim().length > 2);
+            return medList.length;
+        };
+        const medicationCount = countMedications(stats.medications);
+        if (medicationCount >= 5) {
+            safetyDirectives += `⚠️ POLYPHARMACY DETECTED (${medicationCount}+ medications): Complex drug-food interactions likely. This plan may not account for all interactions. STRONGLY RECOMMEND: Consult pharmacist for food-drug timing review. Grapefruit and green leafy vegetables affect MANY medications. When in doubt, keep diet consistent day-to-day. `;
         }
 
         // --- ROUND 13: PARADOX RESOLUTION (CONSTRAINT COLLISIONS) ---
@@ -1163,7 +1282,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // ADAPTIVE THERMOGENESIS: Project 1.5% Weight Loss -> Re-calculate BMR/TDEE
         const projectedWeightM2 = stats.weight * 0.985;
         const bmrM2 = calculateBMR(projectedWeightM2, stats.height, stats.age, stats.gender, stats.medications);
-        const tdeeM2 = calculateTDEE(bmrM2, stats.activity) + cycleCalorieBuffer;
+        const tdeeM2 = calculateTDEE(bmrM2, stats.activity, stats.age) + cycleCalorieBuffer;
         let m2CalTarget = (stats.goal === 'lose' ? Math.round(tdeeM2 * 0.95) : Math.round(tdeeM2 * 1.05));
         // Safety Floors
         if (stats.goal === 'lose' && m2CalTarget < absoluteFloor) m2CalTarget = absoluteFloor;
@@ -1178,7 +1297,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         // ADAPTIVE THERMOGENESIS: Project 3% Total Weight Loss
         const projectedWeightM3 = stats.weight * 0.97;
         const bmrM3 = calculateBMR(projectedWeightM3, stats.height, stats.age, stats.gender, stats.medications);
-        const tdeeM3 = calculateTDEE(bmrM3, stats.activity) + cycleCalorieBuffer;
+        const tdeeM3 = calculateTDEE(bmrM3, stats.activity, stats.age) + cycleCalorieBuffer;
         let m3CalTarget = (stats.goal === 'lose' ? Math.round(tdeeM3 * 0.90) : Math.round(tdeeM3 * 1.10));
         // Safety Floors
         if (stats.goal === 'lose' && m3CalTarget < absoluteFloor) m3CalTarget = absoluteFloor;

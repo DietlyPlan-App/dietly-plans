@@ -268,10 +268,30 @@ const App: React.FC = () => {
         goal: generatedPlan.userStats.goal
       });
 
-    } catch (error) {
+    } catch (error: any) {
       devError(error);
       if (activeSession) trackEvent(activeSession.user.id, 'generation_failed', { error: String(error) });
-      alert("Failed to generate plan. Please try again.");
+
+      // P2 FIX BUG-023: USER-FRIENDLY ERROR MESSAGES
+      let userMessage = "Failed to generate your plan. ";
+      const errorStr = String(error?.message || error || '').toLowerCase();
+
+      if (errorStr.includes('401') || errorStr.includes('unauthorized') || errorStr.includes('auth')) {
+        userMessage += "Your session has expired. Please sign in again.";
+      } else if (errorStr.includes('404') || errorStr.includes('not found')) {
+        userMessage += "Our AI service is temporarily unavailable. Please try again in a few minutes.";
+      } else if (errorStr.includes('429') || errorStr.includes('quota') || errorStr.includes('rate limit')) {
+        userMessage += "You've reached your daily limit. Please try again tomorrow.";
+      } else if (errorStr.includes('network') || errorStr.includes('fetch') || errorStr.includes('failed to fetch')) {
+        userMessage += "Please check your internet connection and try again.";
+      } else if (errorStr.includes('safety') || errorStr.includes('eating_disorder')) {
+        // Safety-related errors should show the actual message
+        userMessage = error?.message || "A safety check prevented plan generation. Please review your inputs.";
+      } else {
+        userMessage += "An unexpected error occurred. Please try again in a moment.";
+      }
+
+      alert(userMessage);
       setCurrentStep('wizard');
     }
   };

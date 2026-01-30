@@ -102,6 +102,24 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         );
         if (!proceed) return;
       }
+
+      // P2 FIX BUG-024: Age > 100 confirmation
+      if (formData.age > 100) {
+        const confirmed = confirm(
+          `You entered age ${formData.age}. Is this correct? Ages over 100 are unusual and may affect calorie calculations.`
+        );
+        if (!confirmed) return;
+      }
+
+      // P2 FIX BUG-025: Extreme weight warning (>250kg / 550lbs)
+      if (formData.weight > 250) {
+        setConflictMessage({
+          title: "⚠️ Extreme Weight Detected",
+          description: `Weight ${formData.weight}kg is in the extreme range. This meal plan should be reviewed by a medical professional, as specialized nutritional considerations may apply.\n\nYou may proceed, but please consult with a healthcare provider.`
+        });
+        setShowConflictModal(true);
+        // Soft warning - allows proceed
+      }
     }
 
     // CRITICAL SAFETY: BMI check at Step 2 (after height/weight are set, when goal is chosen)
@@ -143,6 +161,16 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
         // Soft warning - allow to proceed
       }
 
+      // P0 FIX BUG-002: HARD BLOCK - Morbidly Obese + Weight GAIN is medically dangerous
+      if (bmi >= 40 && formData.goal === 'gain') {
+        setConflictMessage({
+          title: "⛔ Medical Safety Block",
+          description: `Your BMI (${bmi.toFixed(1)}) indicates Class III obesity. Weight gain at this BMI level poses severe cardiovascular and metabolic risks.\n\nThis app cannot safely generate a weight gain plan for Class III obesity.\n\nPlease consult a bariatric specialist or physician to discuss healthy weight management options. We recommend selecting "Maintain" or "Lose" as your goal.`
+        });
+        setShowConflictModal(true);
+        return; // HARD BLOCK - no bypass allowed
+      }
+
       if (!formData.region) return alert("Please enter your City/Region.");
     }
 
@@ -150,6 +178,33 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
     if (step === 3) {
       if (formData.budgetAmount < 0) {
         return alert("Budget cannot be negative. Please enter $0 or more.");
+      }
+
+      // P1 FIX BUG-013: BUDGET PPP NORMALIZATION
+      // Different currencies have different purchasing power - normalize to USD equivalent
+      const normalizeBudgetToUSD = (amount: number, currency: string): number => {
+        const pppMultipliers: Record<string, number> = {
+          'USD': 1.0,
+          'EUR': 1.1,
+          'GBP': 1.3,
+          'CAD': 0.85,
+          'AUD': 0.75,
+          'AED': 0.35, // 100 AED ≈ $35 purchasing power
+          'SAR': 0.30, // 100 SAR ≈ $30 purchasing power
+        };
+        return amount * (pppMultipliers[currency] || 0.5);
+      };
+      const normalizedBudget = normalizeBudgetToUSD(formData.budgetAmount, formData.currency);
+
+      // P1 FIX BUG-014: FRESH COOKING + LOW BUDGET WARNING
+      // Fresh cooking daily on very low budget is extremely challenging
+      if (formData.mealStrategy === 'fresh' && normalizedBudget < 40) {
+        setConflictMessage({
+          title: "💰 Budget & Cooking Strategy",
+          description: `Fresh cooking daily on ${formData.currency} ${formData.budgetAmount}/week may be challenging. "Batch" cooking saves ~30% on groceries by reducing waste and buying in bulk.\n\nYou can proceed with Fresh, but consider switching to Batch for better budget efficiency.`
+        });
+        setShowConflictModal(true);
+        // Soft warning - allows proceed after acknowledgment
       }
     }
 
@@ -292,7 +347,24 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
   const handleBack = () => setStep(prev => prev - 1);
 
   const updateField = (field: keyof UserStats, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+
+      // P0 FIX BUG-004: CASCADE RESET - Gender change clears female-specific fields
+      // This prevents males from retaining pregnancy/breastfeeding/menstrual state
+      if (field === 'gender' && value === 'male') {
+        newData.isPregnant = false;
+        newData.isBreastfeeding = false;
+        newData.lastPeriodStart = undefined;
+      }
+
+      // Also reset menstrual tracking for post-menopausal females (age > 55)
+      if (field === 'age' && value > 55 && prev.gender === 'female') {
+        newData.lastPeriodStart = undefined;
+      }
+
+      return newData;
+    });
   };
 
   // Step 1: Basics
