@@ -5,14 +5,21 @@ declare const Deno: any;
 
 serve(async (req: Request) => {
     console.log("🔔 Dodo Webhook Handler Invoked");
+    console.log("Method:", req.method);
+    console.log("Headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+
     try {
         const rawBody = await req.text();
-        // Dodo sends the signature in 'webhook-signature' header
-        // In a strict prod environment, we would verify this against the secret.
-        // For MVP/Vibe coding, we trust the event ID structure but I'll add the placeholder.
+        console.log("📦 Raw Body Length:", rawBody.length);
+        console.log("📦 Raw Body Preview:", rawBody.substring(0, 500));
 
         const signature = req.headers.get("webhook-signature");
         const secret = Deno.env.get('DODO_WEBHOOK_SECRET');
+
+        console.log("🔐 Signature Present:", !!signature);
+        console.log("🔐 Signature Value:", signature?.substring(0, 50) + "...");
+        console.log("🔐 Secret Present:", !!secret);
+        console.log("🔐 Secret Length:", secret?.length);
 
         if (!secret) {
             console.error("CRITICAL: DODO_WEBHOOK_SECRET is not set.");
@@ -51,25 +58,37 @@ serve(async (req: Request) => {
             encoder.encode(rawBody)
         );
 
+        console.log("🔐 Signature Verification Result:", verified);
+
         if (!verified) {
             console.error("CRITICAL: Invalid Signature detected. BLOCKING REQUEST.");
-            return new Response("Invalid Signature", { status: 401 }); // DISABLED FOR DEBUGGING -> NOW ENABLED
+            // TEMPORARY DEBUG: Log what we expected
+            const expectedSig = await crypto.subtle.sign("HMAC", key, encoder.encode(rawBody));
+            const expectedHex = Array.from(new Uint8Array(expectedSig)).map(b => b.toString(16).padStart(2, '0')).join('');
+            console.log("Expected Signature:", expectedHex);
+            console.log("Received Signature:", signature);
+            return new Response("Invalid Signature", { status: 401 });
         }
 
         // Parse the body
         const body = JSON.parse(rawBody);
         const paymentId = body.data?.payment_id || body.payment_id || 'N/A';
         console.log(`Dodo Event: ${body.type} | ID: ${paymentId}`);
+        console.log("📋 Event Body:", JSON.stringify(body, null, 2).substring(0, 1000));
 
         // 3. Process Payment Success
         // Dodo payload structure: { type: "payment.succeeded", data: { metadata: { ... }, ... } }
         if (body.type === 'payment.succeeded') {
 
-            const metadata = body.data.metadata;
+            const metadata = body.data?.metadata;
+            console.log("📋 Metadata:", JSON.stringify(metadata));
+
             const userId = metadata?.user_id;
             const planTier = metadata?.plan_type || 'full';
-            const amount = body.data.total_amount;
-            const currency = body.data.currency;
+            const amount = body.data?.total_amount;
+            const currency = body.data?.currency;
+
+            console.log(`User ID: ${userId}, Plan Tier: ${planTier}`);
 
             if (userId) {
                 console.log(`💰 Verified Payment for User: ${userId} | Tier: ${planTier}`);
