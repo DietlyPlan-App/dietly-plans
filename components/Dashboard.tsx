@@ -197,7 +197,7 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     const [showPdfConfirm, setShowPdfConfirm] = useState(false);
 
     // NEW: State for Paywall Expansion (V2 Refinement)
-    const [isPaywallExpanded, setIsPaywallExpanded] = useState(true);
+    const [isPaywallExpanded, setIsPaywallExpanded] = useState(false);
 
     // COUNTDOWN TIMER
     const [timeLeft, setTimeLeft] = useState(() => {

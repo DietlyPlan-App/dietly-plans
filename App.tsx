@@ -321,7 +321,7 @@ const App: React.FC = () => {
         )}
       </nav>
 
-      <main className="container mx-auto px-4 py-8 relative">
+      <main className="container mx-auto px-4 py-8 pb-32 relative">
         {/* Background Decor */}
         <div className="fixed top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl -z-10 animate-pulse" />
         <div className="fixed bottom-20 right-10 w-96 h-96 bg-secondary/5 rounded-full blur-3xl -z-10" />
