@@ -558,10 +558,10 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                     <button
                       key={t}
                       onClick={() => updateField('trimester', t)}
-                      className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all flex flex-col items-center justify-center ${formData.trimester === t ? 'border-pink-500 bg-pink-500 text-white shadow-md' : 'border-pink-200 bg-white text-pink-600 hover:border-pink-300 hover:bg-pink-50'}`}
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all flex flex-col items-center justify-center ${formData.trimester === t ? 'border-pink-400 bg-pink-400 text-white shadow-md' : 'border-pink-100 bg-white text-pink-500 hover:border-pink-200'}`}
                     >
-                      <span className="text-base">{t}{t === 1 ? 'st' : t === 2 ? 'nd' : 'rd'}</span>
-                      <span className={`text-xs font-medium mt-0.5 ${formData.trimester === t ? 'text-white/90' : 'text-pink-400'}`}>
+                      <span>{t}{t === 1 ? 'st' : t === 2 ? 'nd' : 'rd'}</span>
+                      <span className={`text-[10px] font-medium leading-none mt-0.5 ${formData.trimester === t ? 'text-pink-50' : 'text-pink-300'}`}>
                         {t === 1 ? 'Weeks 1-12' : t === 2 ? 'Weeks 13-26' : 'Weeks 27+'}
                       </span>
                     </button>
