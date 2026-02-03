@@ -480,6 +480,19 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                     </div>
                 )}
 
+                {/* SAFETY VERIFICATION (Global Safety Check) */}
+                {plan.safetyVerification && (
+                    <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">
+                        <Shield className="w-5 h-5 md:w-6 md:h-6 text-emerald-500 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="font-bold text-emerald-800 text-sm md:text-base">Medical Safety Verification</h4>
+                            <p className="text-xs md:text-sm text-emerald-700 leading-relaxed font-medium">
+                                {plan.safetyVerification}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* METABOLIC TRANSPARENCY WIDGET (Remediation) */}
                 {plan.metabolicLog && plan.metabolicLog.length > 0 && (
                     <div className="bg-indigo-50 border-l-4 border-indigo-500 p-3 md:p-4 rounded-xl flex items-start gap-3 shadow-sm md:col-span-2">

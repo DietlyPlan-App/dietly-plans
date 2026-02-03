@@ -1150,6 +1150,23 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
             safetyDirectives += "CIRCADIAN RHYTHM DISRUPTION DETECTED (SHIFT WORK): TIMING IS CRITICAL. Focus on High Protein/Fat before shift start. LOW CARB at end of shift (to prevent insulin spike before sleep). ";
         }
 
+        // --- ROUND 16: DRUG-NUTRIENT DEPLETION (SAFETY AUDIT FIX) ---
+
+        // STATINS (CoQ10)
+        if (combinedHealthText.match(/statin|lipitor|crestor|zocor/i)) {
+            safetyDirectives += "DRUG DEPLETION: STATIN DETECTED. DEPLETES COQ10. ADVISE COQ10 RICH FOODS (Heart, Liver, Fatty Fish, Pistachios, Sesame Seeds). ";
+        }
+
+        // ORAL CONTRACEPTIVES (B-Vitamins, Magnesium)
+        if (combinedHealthText.match(/birth control|contraceptive|estrogen|progesterone|pill/i)) {
+            safetyDirectives += "DRUG DEPLETION: ORAL CONTRACEPTIVES. DEPLETES B6, B12, FOLATE & MAGNESIUM. ENSURE LEAFY GREENS, LEGUMES, CITRUS & UNREFINED GRAINS. ";
+        }
+
+        // PPIs (Magnesium, B12)
+        if (combinedHealthText.match(/omeprazole|nexium|pantoprazole|prilosec|acid reflux|gerd/i)) {
+            safetyDirectives += "DRUG DEPLETION: PPI (ACID REDUCER). DEPLETES MAGNESIUM, B12 & CALCIUM. RECOMMEND FOODS RICH IN MAGNESIUM (Pumpkin Seeds, Spinach, Almonds). ";
+        }
+
         const isPotassiumSparing = /spironolactone|aldactone|triamterene|amiloride/i.test(combinedHealthText);
 
         // LIVER CIRRHOSIS SAFETY
