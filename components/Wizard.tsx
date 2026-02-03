@@ -551,11 +551,11 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             {formData.isPregnant && (
               <div className="animate-in fade-in slide-in-from-top-1 pl-2">
                 <div className="flex items-center gap-1.5 mb-2 ml-1">
-                  <label className="text-xs font-bold text-pink-600 uppercase tracking-tight">
+                  <label className="text-sm font-bold text-slate-700">
                     Which Trimester? (For Calorie Precision)
                   </label>
                   <div className="group relative cursor-help">
-                    <Info className="w-3.5 h-3.5 text-pink-400" />
+                    <Info className="w-3.5 h-3.5 text-pink-400 hover:text-pink-600 transition-colors" />
                     <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 text-center leading-relaxed">
                       Pregnancy is divided into 3 stages of ~3 months each.
                       <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-800"></div>
