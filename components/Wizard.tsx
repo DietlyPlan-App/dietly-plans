@@ -550,9 +550,19 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
             {/* TRIMESTER SELECTOR (Phase 2 Safety Fix) */}
             {formData.isPregnant && (
               <div className="animate-in fade-in slide-in-from-top-1 pl-2">
-                <label className="block text-xs font-bold text-pink-600 mb-2 uppercase tracking-tight ml-1">
-                  Which Trimester? (For Calorie Precision)
-                </label>
+                <div className="flex items-center gap-1.5 mb-2 ml-1">
+                  <label className="text-xs font-bold text-pink-600 uppercase tracking-tight">
+                    Which Trimester? (For Calorie Precision)
+                  </label>
+                  <div className="group relative cursor-help">
+                    <Info className="w-3.5 h-3.5 text-pink-400" />
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 text-center leading-relaxed">
+                      Pregnancy is divided into 3 stages of ~3 months each.
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-800"></div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
                   {[1, 2, 3].map((t) => (
                     <button
@@ -561,7 +571,7 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
                       className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all flex flex-col items-center justify-center ${formData.trimester === t ? 'border-pink-400 bg-pink-400 text-white shadow-md' : 'border-pink-100 bg-white text-pink-500 hover:border-pink-200'}`}
                     >
                       <span>{t}{t === 1 ? 'st' : t === 2 ? 'nd' : 'rd'}</span>
-                      <span className={`text-[10px] font-medium leading-none mt-0.5 ${formData.trimester === t ? 'text-pink-50' : 'text-pink-300'}`}>
+                      <span className={`text-[11px] font-medium leading-none mt-0.5 ${formData.trimester === t ? 'text-pink-50' : 'text-pink-400'}`}>
                         {t === 1 ? 'Weeks 1-12' : t === 2 ? 'Weeks 13-26' : 'Weeks 27+'}
                       </span>
                     </button>
