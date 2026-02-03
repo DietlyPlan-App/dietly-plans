@@ -71,6 +71,9 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictMessage, setConflictMessage] = useState({ title: "", description: "" });
 
+  // P3 FIX: Inline Validation Error State (Replacing Alerts)
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState<UserStats>(() => {
     const saved = safeLocalStorage.getItem('dietly_wizard_data');
     return saved ? JSON.parse(saved) : DEFAULT_STATS;
@@ -88,13 +91,34 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
 
     // --- INPUT VALIDATION (Merged Step 1: Basics + Physical) ---
     if (step === 1) {
-      if (!formData.age || formData.age < 12 || formData.age > 120) return alert("Please enter a valid age (12-120).");
-      if (!formData.gender) return alert("Please select a gender.");
-      // FLAW-002 FIX: Improved height validation (50-280cm inclusive range for edge cases)
-      if (!formData.height || formData.height < 50 || formData.height > 280) return alert("Please enter a valid height (50-280 cm).");
-      if (!formData.weight || formData.weight < 20 || formData.weight > 500) return alert("Please enter a valid weight.");
+      // Clear previous errors
+      setValidationError(null);
 
-      // FLAW-001 FIX: Age-weight plausibility warning (not block)
+      if (!formData.age || formData.age < 12 || formData.age > 120) {
+        setValidationError("Please enter a valid age (12-120).");
+        return;
+      };
+      if (!formData.gender) {
+        setValidationError("Please select a gender.");
+        return;
+      }
+      // FLAW-002 FIX: Improved height validation (50-280cm inclusive range for edge cases)
+      if (!formData.height || formData.height < 50 || formData.height > 280) {
+        setValidationError("Please enter a valid height (50-280 cm).");
+        return;
+      }
+
+      // P2 FIX BUG-025: Extreme Weight Hard Block (>250kg)
+      if (!formData.weight || formData.weight < 20) {
+        setValidationError("Please enter a valid weight (min 20kg).");
+        return;
+      }
+      if (formData.weight > 250) {
+        setValidationError("Maximum supported weight is 250kg. Please consult a specialist.");
+        return;
+      }
+
+      // FLAW-001 FIX: Age-weight plausibility warning (confirmation only)
       const weightToAgeRatio = formData.weight / formData.age;
       if (weightToAgeRatio > 4 && formData.age < 18) {
         const proceed = confirm(
@@ -109,16 +133,6 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
           `You entered age ${formData.age}. Is this correct? Ages over 100 are unusual and may affect calorie calculations.`
         );
         if (!confirmed) return;
-      }
-
-      // P2 FIX BUG-025: Extreme weight warning (>250kg / 550lbs)
-      if (formData.weight > 250) {
-        setConflictMessage({
-          title: "⚠️ Extreme Weight Detected",
-          description: `Weight ${formData.weight}kg is in the extreme range. This meal plan should be reviewed by a medical professional, as specialized nutritional considerations may apply.\n\nYou may proceed, but please consult with a healthcare provider.`
-        });
-        setShowConflictModal(true);
-        // Soft warning - allows proceed
       }
     }
 
@@ -929,22 +943,32 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
       </div>
 
       {/* Footer - STICKY ON MOBILE */}
-      <div className="fixed bottom-0 left-0 right-0 md:relative px-6 py-4 md:px-10 md:py-8 border-t border-slate-5 bg-white z-50 flex justify-between items-center md:bg-transparent md:border-none">
-        {step > 1 ? (
-          <button onClick={handleBack} aria-label="Go back to previous step" className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
-            Back
-          </button>
-        ) : <div />}
+      <div className="fixed bottom-0 left-0 right-0 md:relative px-6 py-4 md:px-10 md:py-8 border-t border-slate-5 bg-white z-50 flex flex-col gap-4 md:bg-transparent md:border-none">
 
-        <button
-          onClick={step === 5 ? handleComplete : handleNext}
-          disabled={loading || isSubmitting}
-          aria-label={step === 5 ? 'Generate meal plan' : 'Continue to next step'}
-          className="bg-primary hover:bg-primaryDark text-white px-6 md:px-10 py-3 md:py-5 rounded-xl font-bold text-sm md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading || isSubmitting ? 'Thinking...' : (step === 5 ? 'Generate' : 'Next')}
-          {(!loading && !isSubmitting) && <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />}
-        </button>
+        {/* Validation Error Message */}
+        {validationError && (
+          <div className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-bold text-center animate-in slide-in-from-bottom-2">
+            {validationError}
+          </div>
+        )}
+
+        <div className="flex justify-between items-center w-full">
+          {step > 1 ? (
+            <button onClick={handleBack} aria-label="Go back to previous step" className="text-slate-400 font-bold text-base md:text-lg hover:text-dark transition-colors py-2">
+              Back
+            </button>
+          ) : <div />}
+
+          <button
+            onClick={step === 5 ? handleComplete : handleNext}
+            disabled={loading || isSubmitting}
+            aria-label={step === 5 ? 'Generate meal plan' : 'Continue to next step'}
+            className="bg-primary hover:bg-primaryDark text-white px-6 md:px-10 py-3 md:py-5 rounded-xl font-bold text-sm md:text-lg flex items-center gap-2 md:gap-3 transition-all shadow-lg md:shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading || isSubmitting ? 'Thinking...' : (step === 5 ? 'Generate' : 'Next')}
+            {(!loading && !isSubmitting) && <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />}
+          </button>
+        </div>
       </div>
       {/* CONFLICT WARNING MODAL */}
       {showConflictModal && (
