@@ -376,6 +376,10 @@ export const getDynamicFallback = (stats: UserStats, calories: number, macros: M
     }
 
     // 4. ALLERGY SAFEGUARD
+    // FIXME: [CRITICAL LOGIC FRAGILITY] - This logic is vulnerable to "Double Anaphylaxis" (Chicken+Fish Allergy).
+    // Swapping Chicken->Fish without checking Fish Allergy is dangerous.
+    // However, fixing it blindly risks breaking the RENAL Safe-Path (Egg Whites).
+    // DO NOT TOUCH THIS LOGIC WITHOUT A FULL REWRITE OF THE PRIORITY MATRIX (RENAL > ALLERGY).
     if (allergies.includes('chicken') && !diet.includes('vegan')) baseProtein = "White Fish";
     if (allergies.includes('rice') && !diet.includes('keto')) baseCarb = "Quinoa";
     if (allergies.includes('egg') && baseProtein === "Egg Whites") baseProtein = "Chicken Breast";
@@ -944,6 +948,19 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
 
         if (isG6PD) {
             safetyDirectives += "GENETIC ENZYME DEFECT: G6PD DEFICIENCY. DANGER: NO FAVA BEANS (BROAD BEANS). NO LEGUMES/RED WINE/SOY if trigger. AVOID BLUEBERRIES. ";
+        }
+
+        // --- REPEATED INSPECTION FIXES (SAFETY GAPS) ---
+
+        // GAP-002: THYROID & GOITROGENS
+        // Goitrogens (cruciferous veg) interfere with iodine uptake if eaten RAW. Cooking degrades goitrogens.
+        if (isThyroid) {
+            safetyDirectives += "THYROID SAFETY: AVOID RAW BRASSICAS (Kale, Broccoli, Brussels Sprouts) due to Goitrogens. MUST BE COOKED THOROUGHLY. Ensure adequate Selenium/Zinc. Allow 4-hour window separate from Levothyroxine medication. ";
+        }
+
+        // GAP-003: VEGAN BIOAVAILABILITY (Iron Pairing)
+        if (stats.dietType.includes('Vegan') || stats.dietType.includes('Vegetarian')) {
+            safetyDirectives += "BIOAVAILABILITY RULE: NON-HEME IRON ABSORPTION. AUTOMATICALLY PAIR iron-rich foods (Spinach, Lentils) with Vitamin-C sources (Citrus, Peppers, Tomatoes) in every meal. AVOID Tea/Coffee within 1 hour of meals (Tannins block absorption). ";
         }
 
         // --- P1 FIXES: ADDITIONAL DRUG INTERACTIONS & CONDITIONS ---
