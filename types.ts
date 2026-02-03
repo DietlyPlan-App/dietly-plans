@@ -25,6 +25,7 @@ export interface UserStats {
   mealStrategy: MealStrategy;
   includeSnacks: boolean;
   isPregnant: boolean; // Critical Safety Field
+  trimester?: 1 | 2 | 3; // Phase 2 Logic: Pregnancy Precision
   isBreastfeeding: boolean; // NEW: Metabolic Boost Field
   bodyFat?: number; // Biological Precision
   lastPeriodStart?: string; // Hormonal Cycle Tracking

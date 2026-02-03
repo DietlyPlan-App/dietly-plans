@@ -124,6 +124,7 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
     isNoGallbladder: boolean,
     isDiabetic: boolean,
     isGLP1: boolean,
+    isDialysis?: boolean,
     isPKU?: boolean,
     isPCOS?: boolean,
     isMenopauseAge?: boolean,
@@ -182,6 +183,18 @@ export const calculateOptimalMacros = (stats: UserStats, targetCalories: number,
         pSplit = Math.min(pSplit, 0.15); // Strict 15% Cap
         if (cSplit < 0.35) cSplit = 0.35; // Minimum 35% Carb for metabolic stability
         fSplit = 1.0 - (pSplit + cSplit);
+    }
+
+    // B2. DIALYSIS EXCEPTION (Safety Audit Fix #1)
+    // Dialysis patients require HIGH protein (1.2g/kg) due to filtration losses.
+    // This MUST override the standard "Renal Low Protein" rule above.
+    if (overrides.isDialysis && !overrides.isPKU) {
+        // Force minimum 30% Protein (High Protein mode)
+        pSplit = Math.max(pSplit, 0.30);
+        // Ensure balance
+        if (pSplit + fSplit + cSplit > 1.0) {
+            cSplit = 1.0 - (pSplit + fSplit);
+        }
     }
     // C. GERIATRIC (Only if NOT Renal and NOT PKU) - SARCOPENIA PREVENTION
     else if (overrides.isGeriatric && !overrides.isPKU) {
@@ -794,7 +807,17 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
                 logAdjustment("Notice: Overriding 'Lose' goal to 'Maintain' for maternal health.");
             }
         } else if (stats.isPregnant) {
-            calorieTarget = stats.goal === 'gain' ? Math.round(tdee + 300) : tdee;
+            // PHASE 2 FIX: Trimester-Specific Calories (ACOG Guidelines)
+            let pregnancyBonus = 300; // Fallback "Safety Net"
+            if (stats.trimester === 1) pregnancyBonus = 0; // Maintenance
+            else if (stats.trimester === 2) pregnancyBonus = 340; // Growth
+            else if (stats.trimester === 3) pregnancyBonus = 452; // Peak Growth
+
+            calorieTarget = stats.goal === 'gain' ? Math.round(tdee + pregnancyBonus) : tdee + (stats.trimester === 1 ? 0 : pregnancyBonus);
+
+            // Log for debugging/transparency
+            logAdjustment(`Medical Notice: Pregnancy (Trimester ${stats.trimester || 'Unknown'}) detected. Added +${pregnancyBonus}kcal.`);
+
             if (stats.goal === 'lose') {
                 logAdjustment("Notice: Pregnancy detected. Overriding 'Lose' goal to 'Maintain'.");
             }
@@ -1168,6 +1191,7 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
         }
 
         const isPotassiumSparing = /spironolactone|aldactone|triamterene|amiloride/i.test(combinedHealthText);
+        const isDialysis = /dialysis/i.test(combinedHealthText); // Safety Audit Fix #1
 
         // LIVER CIRRHOSIS SAFETY
         if (isCirrhosis) {

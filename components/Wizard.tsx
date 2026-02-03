@@ -547,6 +547,26 @@ const Wizard: React.FC<WizardProps> = ({ onComplete, loading }) => {
               </div>
             </button>
 
+            {/* TRIMESTER SELECTOR (Phase 2 Safety Fix) */}
+            {formData.isPregnant && (
+              <div className="animate-in fade-in slide-in-from-top-1 pl-2">
+                <label className="block text-xs font-bold text-pink-600 mb-2 uppercase tracking-tight ml-1">
+                  Which Trimester? (For Calorie Precision)
+                </label>
+                <div className="flex gap-2">
+                  {[1, 2, 3].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => updateField('trimester', t)}
+                      className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all ${formData.trimester === t ? 'border-pink-400 bg-pink-400 text-white shadow-md' : 'border-pink-100 bg-white text-pink-300 hover:border-pink-200'}`}
+                    >
+                      {t} {t === 1 ? 'st' : t === 2 ? 'nd' : 'rd'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => updateField('isBreastfeeding', !formData.isBreastfeeding)}
               className={`w-full p-3.5 md:p-4 rounded-2xl border-2 flex items-center justify-between transition-all active:scale-[0.99] ${formData.isBreastfeeding ? 'border-purple-400 bg-purple-50 text-purple-700 shadow-sm' : 'border-slate-100 text-slate-400 hover:border-slate-200 bg-white'}`}
