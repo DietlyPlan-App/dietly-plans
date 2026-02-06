@@ -196,16 +196,20 @@ serve(async (req: Request) => {
                         payment_id: paymentId // Store Dodo Payment ID
                     });
 
-                // CRITICAL LOGIC SWITCH:
                 if (planId) {
                     // Pay-Per-Plan: Unlock specific UUID
                     console.log(`🔹 Unlocking Specific Plan ID: ${planId}`);
                     updateQuery = updateQuery.eq('id', planId);
                 } else {
-                    // Legacy Fallback: Unlock by User ID (One-Time Unlock)
-                    // We keep this for backward safety during migration
-                    console.warn(`⚠️ No plan_id found. Falling back to User-Level unlock for ${userId}`);
-                    updateQuery = updateQuery.eq('user_id', userId);
+                    // SECURITY FIX: Legacy Fallback Removed.
+                    // In V2 Architecture ("Pay-Per-Plan"), we CANNOT update by User ID alone,
+                    // as that would unlock ALL plans for the user (Free & Paid).
+                    // We must fail safely.
+                    console.error(`🚨 CRITICAL: Webhook missing 'plan_id'. Cannot unlock safely. User: ${userId}`);
+                    return new Response(JSON.stringify({ error: "Missing plan_id in Pay-Per-Plan architecture" }), {
+                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                        status: 400
+                    });
                 }
 
                 const { error } = await updateQuery;

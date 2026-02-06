@@ -237,6 +237,11 @@ const App: React.FC = () => {
       setPlan(generatedPlan);
       setCurrentStep('dashboard');
 
+      // CRITICAL SECURITY: Reset Payment State IMMEDIATELY upon new generation.
+      // Do not wait for DB confirmation. New Content = New Payment.
+      setIsPaid(false);
+      setPlanTier('free');
+
       // Clear the wizard state after successful generation to start fresh next time
       safeLocalStorage.removeItem('dietly_wizard_data');
       safeLocalStorage.removeItem('dietly_wizard_step');
@@ -258,8 +263,7 @@ const App: React.FC = () => {
           devError("Failed to save to Cloud:", error);
         } else if (newRow) {
           setCurrentPlanId(newRow.id); // Track the new Plan ID
-          setPlanTier('free'); // Reset payment status for new plan
-          setIsPaid(false);
+          // Payment state already reset above
         }
 
         // B. THE VAULT: Generate PDF Blob + Upload
