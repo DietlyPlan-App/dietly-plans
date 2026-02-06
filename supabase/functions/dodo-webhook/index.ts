@@ -233,6 +233,38 @@ serve(async (req: Request) => {
             } else {
                 console.warn("⚠️ Webhook received but 'user_id' missing in metadata.");
             }
+        } else if (body.type === 'payment.refunded') {
+            console.log(`💸 Refund Event Detected: ${paymentId}`);
+
+            // Refund Logic: Lock the plan again
+            // We can match by payment_id
+            const supabaseAdmin = createClient(
+                Deno.env.get('SUPABASE_URL') ?? '',
+                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            );
+
+            const { error } = await supabaseAdmin
+                .from('plans')
+                .update({ is_paid: false }) // Re-lock
+                .eq('payment_id', paymentId);
+
+            if (error) {
+                console.error('Database Update Error (Refund):', error);
+                throw error;
+            }
+
+            // Log activity
+            await supabaseAdmin.from('activity_logs').insert({
+                action_type: 'payment_refunded',
+                metadata: {
+                    provider: 'dodo',
+                    event_id: body.payment_id,
+                    payment_id: paymentId
+                }
+            });
+
+            console.log(`🔒 Plan Re-Locked due to Refund: ${paymentId}`);
+
         } else {
             console.log(`ℹ️ Ignoring event type: ${body.type}`);
         }

@@ -194,6 +194,9 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
     const [isCheckoutLoading, setIsCheckoutLoading] = useState<string | null>(null); // NEW: Track which tier is loading
     const [selectedPlan, setSelectedPlan] = useState<'1month' | 'full'>('full');
 
+    // Explicit Check for Payment Status
+    const isValidPaid = isPaid;
+
     // NEW: State for PDF Confirmation Modal
     const [showPdfConfirm, setShowPdfConfirm] = useState(false);
 
@@ -545,11 +548,11 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                         {!isPaid && <span className="bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-full">PREVIEW MODE</span>}
                     </h2>
                     <button
-                        onClick={handleDownloadRequest}
-                        className="flex bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-5 py-3 rounded-2xl font-bold items-center gap-2 transition-all shadow-sm active:scale-95 w-full md:w-auto justify-center"
+                        onClick={isValidPaid ? handleDownloadRequest : () => { playPop(); setIsPaywallExpanded(true); }}
+                        className={`flex bg-white hover:bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl font-bold items-center gap-2 transition-all shadow-sm active:scale-95 w-full md:w-auto justify-center ${!isValidPaid ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600'}`}
                     >
-                        <Download className="w-4 h-4" />
-                        Download Plan
+                        {isValidPaid ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                        {isValidPaid ? "Download Plan" : "Download Locked"}
                     </button>
                 </div>
 
@@ -958,16 +961,16 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                 )
             }
 
-            {/* Floating PDF Button - Hidden on Mobile if Unpaid to prevent Paywall Overlap */}
-            <div className={`fixed bottom-8 right-8 z-40 animate-in zoom-in duration-300 ${!isPaid ? 'hidden md:block' : ''}`}>
+            {/* Floating PDF Button - Locked if Unpaid (Visible on Mobile now to drive upgrade) */}
+            <div className={`fixed bottom-8 right-8 z-40 animate-in zoom-in duration-300`}>
                 <button
-                    onClick={handleDownloadRequest}
-                    className="bg-primary text-white p-3 md:p-4 rounded-full shadow-2xl shadow-primary/40 hover:bg-primaryDark transition-all flex items-center gap-3 pr-6 md:pr-8 group hover:scale-105"
+                    onClick={isValidPaid ? handleDownloadRequest : () => { playPop(); setIsPaywallExpanded(true); }}
+                    className={`${isValidPaid ? 'bg-primary hover:bg-primaryDark' : 'bg-slate-800 hover:bg-slate-700'} text-white p-3 md:p-4 rounded-full shadow-2xl shadow-slate-900/20 transition-all flex items-center gap-3 pr-6 md:pr-8 group hover:scale-105`}
                 >
-                    <div className="bg-white/20 p-2 rounded-full">
-                        <Download className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" />
+                    <div className={`${isValidPaid ? 'bg-white/20' : 'bg-white/10'} p-2 rounded-full`}>
+                        {isValidPaid ? <Download className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" /> : <Lock className="w-5 h-5 md:w-6 md:h-6 group-hover:scale-110 transition-transform" />}
                     </div>
-                    <span className="font-bold text-sm md:text-lg">PDF Book</span>
+                    <span className="font-bold text-sm md:text-lg">{isValidPaid ? "PDF Book" : "PDF Locked"}</span>
                 </button>
             </div>
 
