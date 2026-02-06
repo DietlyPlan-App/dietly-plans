@@ -110,4 +110,5 @@ export interface PlanRecord {
   createdAt: string;
   data: AIResponse;
   isPaid: boolean;
+  plan_tier?: '1month' | 'full'; // Added for Tier Logic
 }

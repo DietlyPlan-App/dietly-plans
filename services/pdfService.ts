@@ -2,7 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { AIResponse, MonthPlan, Meal } from "../types";
 
-export const generatePDF = (plan: AIResponse) => {
+export const generatePDF = (plan: AIResponse, tier: 'free' | '1month' | 'full' = 'full') => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
@@ -372,10 +372,13 @@ export const generatePDF = (plan: AIResponse) => {
         });
     };
 
-    // Render All Months
+    // Render All Months based on Tier
     renderMonth(plan.roadmap.month1, 1);
-    renderMonth(plan.roadmap.month2, 2);
-    renderMonth(plan.roadmap.month3, 3);
+
+    if (tier === 'full') {
+        renderMonth(plan.roadmap.month2, 2);
+        renderMonth(plan.roadmap.month3, 3);
+    }
 
     // --- LAST PAGE: DISCLAIMER ---
     doc.addPage();

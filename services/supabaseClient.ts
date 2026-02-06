@@ -128,6 +128,7 @@ export const fetchUserHistory = async (userId: string) => {
       calories: row.data.userStats?.tdee || row.data.weekTemplate?.[0]?.dailyMacros?.calories,
       plan: row.data, // Pass full plan
       isPaid: row.is_paid, // Pass payment status for UI
+      planTier: row.plan_tier, // NEW: Pass Tier Info from DB
       id: row.id
     }));
 

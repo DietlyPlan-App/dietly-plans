@@ -21,6 +21,7 @@ interface HistoryItem {
     pdfUrl?: string;
     calories?: number;
     plan?: AIResponse;
+    planTier?: '1month' | 'full'; // NEW: Tier
 }
 
 interface HistoryVaultProps {
@@ -43,10 +44,11 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose, onN
         loadHistory();
     }, [userId]);
 
-    const handleRegenerate = async (plan: AIResponse, index: number) => {
+    const handleRegenerate = async (plan: AIResponse, index: number, item: HistoryItem) => {
         setGeneratingId(index);
         try {
-            generatePDF(plan);
+            // Pass the Tier from History (default to full if missing, but it should be there)
+            generatePDF(plan, item.planTier || 'full'); // UPDATED SIG
         } catch (e) {
             console.error("Regeneration failed", e);
             alert("Failed to regenerate PDF.");
@@ -168,7 +170,7 @@ export const HistoryVault: React.FC<HistoryVaultProps> = ({ userId, onClose, onN
                                             </a>
                                         ) : item.plan ? (
                                             <button
-                                                onClick={() => item.plan && handleRegenerate(item.plan, idx)}
+                                                onClick={() => item.plan && handleRegenerate(item.plan, idx, item)} // Pass Item
                                                 disabled={generatingId === idx}
                                                 className="px-3 py-2 md:px-4 md:py-2.5 rounded-lg md:rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] md:text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-70"
                                             >
