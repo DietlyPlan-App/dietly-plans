@@ -41,6 +41,9 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // NEW: Track the specific Plan ID (for Pay-Per-Plan)
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+
 
   const [isPaid, setIsPaid] = useState(false);
   const [planTier, setPlanTier] = useState<'free' | '1month' | 'full'>('free');
@@ -136,6 +139,7 @@ const App: React.FC = () => {
             if (data.is_paid) {
               setIsPaid(true);
               setPlanTier(data.plan_tier || 'full');
+              setCurrentPlanId(data.id); // Sync ID
               devLog("✅ Payment confirmed! User unlocked.");
             }
           }
@@ -162,7 +166,9 @@ const App: React.FC = () => {
         .from('plans')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .order('created_at', { ascending: false }) // Get Latest
+        .limit(1)
+        .maybeSingle(); // Safe for 0 or 1 result
 
       if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found" (New user)
         devError('Error fetching plan:', error);
@@ -175,6 +181,7 @@ const App: React.FC = () => {
         // SECURITY FIX: Removed LocalStorage Temp Unlock. 
         // Only the Database Record is trusted.
         const dbPaidStatus = data.is_paid;
+        setCurrentPlanId(data.id); // Save the ID
 
         if (dbPaidStatus) {
           setIsPaid(true);
@@ -234,32 +241,46 @@ const App: React.FC = () => {
       safeLocalStorage.removeItem('dietly_wizard_data');
       safeLocalStorage.removeItem('dietly_wizard_step');
 
-      // A. Save to Active Plans (Upsert - Current State)
-      // ONLY if real user (Guest mode skips DB)
+      // A. Save to Active Plans (INSERT NEW ROW - History is preserved)
+      // V2 Architecture: Pay-Per-Plan means every generation is a new unique row.
       if (activeSession.user.id !== 'mock_user_id') {
-        const { error } = await supabase
+        const { data: newRow, error } = await supabase
           .from('plans')
-          .upsert({
+          .insert({
             user_id: activeSession.user.id,
             data: generatedPlan,
-            updated_at: new Date()
-          }, { onConflict: 'user_id' });
+            // id is auto-generated
+          })
+          .select()
+          .single();
 
-        if (error) devError("Failed to save to Cloud:", error);
+        if (error) {
+          devError("Failed to save to Cloud:", error);
+        } else if (newRow) {
+          setCurrentPlanId(newRow.id); // Track the new Plan ID
+          setPlanTier('free'); // Reset payment status for new plan
+          setIsPaid(false);
+        }
 
         // B. THE VAULT: Generate PDF Blob + Upload
+        // We still upload PDF for backup, but 'plans' table is now the master record check.
         let pdfUrl: string | undefined = undefined;
         try {
           const blob = await generatePDFBlob(generatedPlan);
           const dateStr = new Date().toISOString().split('T')[0];
+          // We don't have the Plan ID in the filename easily unless we used newRow.id, 
+          // but keeping user/date format is fine for now.
           const uploadedUrl = await uploadPDF(activeSession.user.id, blob, dateStr);
           if (uploadedUrl) pdfUrl = uploadedUrl;
         } catch (pdfError) {
           console.warn("Vault Backup Failed (Non-Critical):", pdfError);
         }
 
-        // C. Save to History (Insert - Permanent Record)
-        await saveHistory(activeSession.user.id, generatedPlan, pdfUrl);
+        // C. Save to History (Optional / Duplicate?)
+        // Since 'plans' table is now effectively the history (1:Many), we don't strictly *need* plan_history.
+        // But to keep 'HistoryVault.tsx' working without major refactor yet, we can double-write OR update Vault later.
+        // For now: DISABLED Double Write to avoid confusion. Vault should read valid 'plans'.
+        // await saveHistory(activeSession.user.id, generatedPlan, pdfUrl); 
       }
 
       // C. Log Success
@@ -400,6 +421,7 @@ const App: React.FC = () => {
                 onUnlock={() => { }} // Legacy prop, we handle redirect inside Dashboard now
                 userId={session?.user?.id}
                 userEmail={session?.user?.email}
+                planId={currentPlanId} // Pass ID to Dashboard for Checkout
               />
             </Suspense>
           </div>

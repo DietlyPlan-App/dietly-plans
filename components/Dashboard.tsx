@@ -14,6 +14,7 @@ interface DashboardProps {
     onUnlock: () => void;
     userId?: string;
     userEmail?: string;
+    planId?: string | null; // NEW: Specific Plan ID
 }
 
 // --- AUDIO HAPTICS ---
@@ -185,7 +186,7 @@ const MealDetail: React.FC<{ meal: Meal; type: string; isReheat?: boolean }> = (
     );
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, userEmail }) => {
+const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, userEmail, planId }) => {
     const [activeMonthKey, setActiveMonthKey] = useState<'month1' | 'month2' | 'month3'>('month1');
     const [activeWeek, setActiveWeek] = useState(0);
     const [viewMode, setViewMode] = useState<'meals' | 'groceries'>('meals');
@@ -245,7 +246,8 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
                     userEmail,
                     plan.userStats.name,
                     plan.userStats.currency,
-                    tier
+                    tier,
+                    planId || undefined
                 );
 
                 // UX: Clear loading state after 5 seconds if redirect doesn't happen instantly

@@ -107,25 +107,28 @@ export const saveHistory = async (userId: string, fullData: any, pdfUrl?: string
 };
 
 /**
- * Fetches the user's plan history (LIMIT 5 for now to save bandwidth)
+ * Fetches the user's plan history from the 'plans' table.
+ * Supports the V2 Pay-Per-Plan architecture.
  */
 export const fetchUserHistory = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .from('plan_history')
-      .select('created_at, full_data')
+      .from('plans')
+      .select('id, created_at, data, is_paid, plan_tier')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(20); // Increased limit as we might have many plans
 
     if (error) throw error;
 
     return data.map(row => ({
       date: row.created_at,
-      title: row.full_data.plan?.planTitle || "Custom Diet Plan", // Fallback if no title
-      pdfUrl: row.full_data.meta_pdf_url,
-      calories: row.full_data.plan?.weekTemplate?.[0]?.dailyMacros?.calories,
-      plan: row.full_data.plan // Pass full plan for regeneration if needed
+      title: row.data.planTitle || (row.is_paid ? `Paid Plan (${row.plan_tier})` : "Preview Plan"),
+      pdfUrl: row.data.meta_pdf_url, // Might be null if not updated
+      calories: row.data.userStats?.tdee || row.data.weekTemplate?.[0]?.dailyMacros?.calories,
+      plan: row.data, // Pass full plan
+      isPaid: row.is_paid, // Pass payment status for UI
+      id: row.id
     }));
 
   } catch (e) {

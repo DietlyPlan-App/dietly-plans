@@ -5,7 +5,7 @@ import { supabaseUrl, supabaseAnonKey } from './supabaseClient';
  * Generates a secure Dodo Payments Checkout URL.
  * Uses direct fetch to avoid common SDK 'Failed to send request' issues in sandbox environments.
  */
-export const getCheckoutUrl = async (userId: string, userEmail?: string, userName?: string, currency?: string, planType: '1month' | 'full' = 'full'): Promise<string> => {
+export const getCheckoutUrl = async (userId: string, userEmail?: string, userName?: string, currency?: string, planType: '1month' | 'full' = 'full', planId?: string): Promise<string> => {
   const functionUrl = `${supabaseUrl}/functions/v1/create-dodo-checkout`;
 
   try {
@@ -21,7 +21,8 @@ export const getCheckoutUrl = async (userId: string, userEmail?: string, userNam
         userEmail,
         userName,
         currency,
-        planType
+        planType,
+        planId // Pass the Plan ID
       })
     });
 

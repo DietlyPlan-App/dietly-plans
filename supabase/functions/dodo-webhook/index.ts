@@ -119,13 +119,17 @@ serve(async (req: Request) => {
 
         console.log("🔐 Signature Verification Result:", verified);
 
+        // ... imports ...
+
+        // ... verify signature logic ...
+
         if (!verified) {
-            console.warn("⚠️ Signature verification failed, but allowing request for now to ensure payment processing.");
-            // console.error("CRITICAL: Invalid Signature detected. BLOCKING REQUEST.");
-            // return new Response(JSON.stringify({ error: "Invalid Signature" }), {
-            //     headers: { ...corsHeaders, "Content-Type": "application/json" },
-            //     status: 401
-            // });
+            console.error("CRITICAL: Invalid Signature detected. BLOCKING REQUEST.");
+            // SECURITY ID: 35 (Uncommented Verification)
+            return new Response(JSON.stringify({ error: "Invalid Signature" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 401
+            });
         }
 
         // Parse the body
@@ -135,18 +139,29 @@ serve(async (req: Request) => {
         console.log("📋 Event Body:", JSON.stringify(body, null, 2).substring(0, 1000));
 
         // 3. Process Payment Success
-        // Dodo payload structure: { type: "payment.succeeded", data: { metadata: { ... }, ... } }
         if (body.type === 'payment.succeeded') {
 
             const metadata = body.data?.metadata;
             console.log("📋 Metadata:", JSON.stringify(metadata));
 
             const userId = metadata?.user_id;
+            const planId = metadata?.plan_id; // NEW: Target specific plan
             const planTier = metadata?.plan_type || 'full';
-            const amount = body.data?.total_amount;
+            const amount = body.data?.total_amount; // e.g. 19.99
             const currency = body.data?.currency;
 
-            console.log(`User ID: ${userId}, Plan Tier: ${planTier}`);
+            console.log(`User ID: ${userId}, Plan ID: ${planId}, Tier: ${planTier}, Amount: ${amount}`);
+
+            // SECURITY ID: 35 (Amount Validation)
+            // 9.99 or 19.99. Let's enforce a minimum of $9.00 to prevent 'penny' attacks.
+            // Adjust threshold based on currency if needed, but assuming USD for now.
+            if (amount < 9) {
+                console.error(`🚨 FRAUD ALERT: Payment amount too low (${amount}). Ignoring unlock.`);
+                return new Response(JSON.stringify({ error: "Amount invalid" }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    status: 400
+                });
+            }
 
             if (userId) {
                 console.log(`💰 Verified Payment for User: ${userId} | Tier: ${planTier}`);
@@ -156,7 +171,7 @@ serve(async (req: Request) => {
                     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
                 );
 
-                // IDEMPOTENCY CHECK: Prevent duplicate processing
+                // IDEMPOTENCY CHECK
                 const { data: existingLog } = await supabaseAdmin
                     .from('activity_logs')
                     .select('id')
@@ -172,14 +187,28 @@ serve(async (req: Request) => {
                     });
                 }
 
-                // Update Database - Idempotent
-                const { error } = await supabaseAdmin
+                // Update Database - Targeted Unlock (Plan ID)
+                let updateQuery = supabaseAdmin
                     .from('plans')
                     .update({
                         is_paid: true,
-                        plan_tier: planTier
-                    })
-                    .eq('user_id', userId);
+                        plan_tier: planTier,
+                        payment_id: paymentId // Store Dodo Payment ID
+                    });
+
+                // CRITICAL LOGIC SWITCH:
+                if (planId) {
+                    // Pay-Per-Plan: Unlock specific UUID
+                    console.log(`🔹 Unlocking Specific Plan ID: ${planId}`);
+                    updateQuery = updateQuery.eq('id', planId);
+                } else {
+                    // Legacy Fallback: Unlock by User ID (One-Time Unlock)
+                    // We keep this for backward safety during migration
+                    console.warn(`⚠️ No plan_id found. Falling back to User-Level unlock for ${userId}`);
+                    updateQuery = updateQuery.eq('user_id', userId);
+                }
+
+                const { error } = await updateQuery;
 
                 if (error) {
                     console.error('Database Update Error:', error);
@@ -195,7 +224,8 @@ serve(async (req: Request) => {
                         amount,
                         currency,
                         event_id: body.payment_id,
-                        plan_tier: planTier
+                        plan_tier: planTier,
+                        plan_id: planId
                     }
                 });
 
@@ -215,7 +245,6 @@ serve(async (req: Request) => {
 
     } catch (err: any) {
         console.error("Webhook Logic Error:", err);
-        // Return 400 only if we want Dodo to retry (e.g. DB connection failed)
         return new Response(JSON.stringify({ error: err.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400

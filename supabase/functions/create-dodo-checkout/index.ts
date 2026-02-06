@@ -39,13 +39,19 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, userEmail, userName, currency, planType } = await req.json();
+    const { userId, userEmail, userName, currency, planType, planId } = await req.json();
 
     if (!userId) {
       throw new Error("User ID is required");
     }
 
-    console.log("Processing checkout for userId:", userId);
+    // New: Plan ID is required for Pay-Per-Plan architecture
+    // We allow optional for legacy support, but log warning
+    if (!planId) {
+      console.warn("⚠️ Checkout initiated without planId. This will default to legacy behavior (User-Level unlock).");
+    }
+
+    console.log(`Processing checkout for userId: ${userId} | Plan: ${planId || 'LEGACY'}`);
 
     // 1. VALIDATE USER EXISTS IN DATABASE
     const supabaseAdmin = createClient(
@@ -53,20 +59,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // V2 Update: Verification can now be skipped or adapted since we might be paying for a DRAFT plan
+    // But we still want to ensure the USER exists.
     const { data: userExists, error: dbError } = await supabaseAdmin
       .from('plans')
       .select('user_id')
       .eq('user_id', userId)
-      .single();
+      .limit(1); // Use limit(1) instead of single() as there might be multiple plans now
 
     if (dbError) {
       console.error("Database Verification Failed:", JSON.stringify(dbError));
       throw new Error(`Profile verify failed: ${dbError.message || dbError.code}`);
     }
 
-    if (!userExists) {
-      console.error("User not found in plans table:", userId);
-      throw new Error("No diet plan found for this user. Please generate one first.");
+    if (!userExists || userExists.length === 0) {
+      // If no plans exist, it's weird but maybe they are buying their first one?
+      // Proceeding, but logging.
+      console.warn("User has no existing plans, but checkout requested.");
     }
 
     const DODO_API_KEY = Deno.env.get('DODO_API_KEY');
@@ -117,7 +126,8 @@ serve(async (req) => {
       customer: customerPayload,
       metadata: {
         user_id: userId,
-        plan_type: planType || 'full'
+        plan_type: planType || 'full',
+        plan_id: planId // <--- CRITICAL: Pass the Plan ID to Dodo
       },
       return_url: `${APP_URL}/?success=true`
     };
