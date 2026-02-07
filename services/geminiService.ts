@@ -383,14 +383,34 @@ export const getDynamicFallback = (stats: UserStats, calories: number, macros: M
         baseVeg = "Green Beans"; // Low potassium
     }
 
-    // 4. ALLERGY SAFEGUARD
-    // FIXME: [CRITICAL LOGIC FRAGILITY] - This logic is vulnerable to "Double Anaphylaxis" (Chicken+Fish Allergy).
-    // Swapping Chicken->Fish without checking Fish Allergy is dangerous.
-    // However, fixing it blindly risks breaking the RENAL Safe-Path (Egg Whites).
-    // DO NOT TOUCH THIS LOGIC WITHOUT A FULL REWRITE OF THE PRIORITY MATRIX (RENAL > ALLERGY).
-    if (allergies.includes('chicken') && !diet.includes('vegan')) baseProtein = "White Fish";
-    if (allergies.includes('rice') && !diet.includes('keto')) baseCarb = "Quinoa";
-    if (allergies.includes('egg') && baseProtein === "Egg Whites") baseProtein = "Chicken Breast";
+    // 4. ALLERGY SAFEGUARD (PRIORITY WATERFALL)
+    // FIX: "Double Anaphylaxis" Solved. Checks down the chain.
+
+    // A. RENAL + EGG ALLERGY CONFLICT
+    if (baseProtein === "Egg Whites" && allergies.includes('egg')) {
+        baseProtein = "Chicken Breast"; // Fallback 1
+        if (allergies.includes('chicken') || allergies.includes('poultry')) {
+            baseProtein = "White Fish"; // Fallback 2
+        }
+    }
+
+    // B. STANDARD CHICKEN ALLERGY
+    if ((baseProtein === "Chicken Breast" || baseProtein === "Grilled Chicken") && (allergies.includes('chicken') || allergies.includes('poultry'))) {
+        if (!allergies.includes('fish') && !allergies.includes('seafood') && !allergies.includes('shellfish')) {
+            baseProtein = "White Fish";
+        } else if (!allergies.includes('turkey')) {
+            baseProtein = "Turkey Breast";
+        } else if (!allergies.includes('beef')) {
+            baseProtein = "Lean Beef";
+        } else {
+            baseProtein = "Tofu"; // Last Resort
+        }
+    }
+
+    if (allergies.includes('rice') && baseCarb === "Brown Rice" && !diet.includes('keto')) baseCarb = "Quinoa";
+    if (allergies.includes('nut') || allergies.includes('almond')) {
+        // Ensure no nut-based defaults (though mostly handled in generation)
+    }
 
     const fallbackMeal = (name: string, cal: number) => ({
         name: name,

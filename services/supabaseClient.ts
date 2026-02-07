@@ -114,7 +114,7 @@ export const fetchUserHistory = async (userId: string) => {
   try {
     const { data, error } = await supabase
       .from('plans')
-      .select('id, created_at, data, is_paid, plan_tier')
+      .select('id, created_at, data, is_paid, plan_tier, payment_id')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(20); // Increased limit as we might have many plans
@@ -129,7 +129,8 @@ export const fetchUserHistory = async (userId: string) => {
       plan: row.data, // Pass full plan
       isPaid: row.is_paid, // Pass payment status for UI
       planTier: row.plan_tier, // NEW: Pass Tier Info from DB
-      id: row.id
+      id: row.id,
+      paymentId: row.payment_id
     }));
 
   } catch (e) {

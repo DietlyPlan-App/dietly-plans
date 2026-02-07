@@ -111,4 +111,5 @@ export interface PlanRecord {
   data: AIResponse;
   isPaid: boolean;
   plan_tier?: '1month' | 'full'; // Added for Tier Logic
+  payment_id?: string; // Links to Dodo Payment ID (Audit)
 }

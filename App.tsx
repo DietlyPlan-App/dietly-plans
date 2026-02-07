@@ -196,7 +196,7 @@ const App: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('plans')
-        .select('*')
+        .select('*, payment_id')
         .eq('user_id', userId)
         .order('created_at', { ascending: false }) // Get Latest
         .limit(1)
@@ -214,6 +214,10 @@ const App: React.FC = () => {
         // Only the Database Record is trusted.
         const dbPaidStatus = data.is_paid;
         setCurrentPlanId(data.id); // Save the ID
+        if (data.payment_id) {
+          console.log("Audit: Payment ID found:", data.payment_id);
+          // setPaymentId(data.payment_id); // TODO: Add state if needed for UI
+        }
 
         if (dbPaidStatus) {
           setIsPaid(true);
