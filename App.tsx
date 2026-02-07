@@ -293,6 +293,8 @@ const App: React.FC = () => {
 
         if (error) {
           devError("Failed to save to Cloud:", error);
+          // P0 FIX: ALERT USER ON FAIL
+          alert(`CRITICAL ERROR: Your plan generated successfully, but could not be saved to our database.\n\nError: ${error.message || JSON.stringify(error)}\n\nPlease screenshot this and contact support.`);
         } else if (newRow) {
           setCurrentPlanId(newRow.id); // Track the new Plan ID
           // Payment state already reset above

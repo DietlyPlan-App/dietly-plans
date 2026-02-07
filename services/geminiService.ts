@@ -359,6 +359,14 @@ export const getDynamicFallback = (stats: UserStats, calories: number, macros: M
             if (allergies.includes('legume') || allergies.includes('bean') || allergies.includes('lentil')) {
                 baseProtein = "Pea Protein Isolate & Hemp Seeds";
             }
+            // P1 FIX: THE IMPOSSIBLE VEGAN (No Soy, No Gluten, No Nuts, No Legumes)
+            if (
+                (allergies.includes('legume') || allergies.includes('bean') || allergies.includes('pea')) &&
+                (allergies.includes('nut') || allergies.includes('almond')) &&
+                (allergies.includes('gluten') || allergies.includes('wheat'))
+            ) {
+                baseProtein = "Rice Protein Powder & Hemp Hearts";
+            }
         }
     }
 
@@ -727,6 +735,14 @@ export const generateMealPlan = async (stats: UserStats, onProgress?: (msg: stri
     const isCeliac = containsCondition(combinedHealthText, /celiac|gluten|wheat/i);
     const isPKU = containsCondition(combinedHealthText, /pku|phenylketonuria|phenylalanine/i);
     const isG6PD = containsCondition(combinedHealthText, /g6pd|favism/i);
+
+    // P1 FIX: PKU SAFETY INJECTION (The "Food Inspector")
+    // Explicitly add these to the allergy list so runSafetyWatchdog catches them even if AI suggests them.
+    if (isPKU) {
+        logAdjustment("Medical Safety: PKU Detected. Injecting strict anti-phenylalanine blockers into safety watchdog.");
+        if (!stats.allergies) stats.allergies = "";
+        stats.allergies += ", aspartame, nutrasweet, soy, tofu, steak, beef, pork, chicken, turkey, fish, tuna, salmon, eggs, dairy, milk, cheese, yogurt, nuts, seeds, beans, lentils, legumes, wheat, flour, gelatin, msg";
+    }
 
     // ROUND 8: ANTIBIOTIC + PROBIOTIC
     const isAntibiotic = containsCondition(combinedHealthText, /antibiotic|amoxicillin|doxycycline|cipro|penicillin|azithromycin/i);
@@ -1459,6 +1475,8 @@ function expandMonth(index: number, data: any, targetCal: number, water: number,
             meals.lunch = runSafetyWatchdog(meals.lunch, userAllergies);
             meals.dinner = runSafetyWatchdog(meals.dinner, userAllergies);
             if (meals.snack) meals.snack = runSafetyWatchdog(meals.snack, userAllergies);
+
+
 
             fullMonthDays.push({
                 day: (week * 7) + d + 1,
