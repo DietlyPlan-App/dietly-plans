@@ -7,7 +7,7 @@ import { generateMealPlan } from './services/geminiService';
 import { supabase, trackEvent, saveHistory, uploadPDF, checkRateLimit, trackGenerationStart, formatTimeUntilReset } from './services/supabaseClient'; // Import Client & Tracking
 import { generatePDFBlob } from './services/pdfService'; // NEW: Vault Blob Generator
 import { UserStats, AIResponse } from './types';
-import { Zap, LogOut, X, CheckCircle } from 'lucide-react';
+import { Zap, LogOut, X, CheckCircle, Loader2 } from 'lucide-react';
 import { safeLocalStorage } from './src/utils/storageUtils';
 
 // --- LAZY LOADED COMPONENTS (Code Splitting for Bundle Optimization) ---
@@ -48,7 +48,8 @@ const App: React.FC = () => {
   const [isPaid, setIsPaid] = useState(false);
   const [planTier, setPlanTier] = useState<'free' | '1month' | 'full'>('free');
   const [showAuthModal, setShowAuthModal] = useState(false); // New Modal State
-  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false); // Payment Success Modal
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [isPaymentVerifying, setIsPaymentVerifying] = useState(false); // UX SPINNER STATE // Payment Success Modal
   const [showHistory, setShowHistory] = useState(false); // NEW: History Vault Modal
 
   // Track if we already logged login to prevent double-firing in StrictMode
@@ -123,31 +124,62 @@ const App: React.FC = () => {
       window.history.replaceState({}, document.title, "/");
 
       // CRITICAL FIX: Re-fetch user data after payment to get updated is_paid status
-      // Add a small delay to allow webhook to process
       const refetchAfterPayment = async () => {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for webhook
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession?.user?.id) {
-          devLog("Refetching user data after payment success...");
-          const { data, error } = await supabase
-            .from('plans')
-            .select('*')
-            .eq('user_id', currentSession.user.id)
-            .single();
+        setIsPaymentVerifying(true); // START SPINNER
+        try {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for webhook
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          if (currentSession?.user?.id) {
+            devLog("Refetching user data after payment success...");
+            const { data, error } = await supabase
+              .from('plans')
+              .select('*')
+              .eq('user_id', currentSession.user.id)
+              .single();
 
-          if (data && !error) {
-            if (data.is_paid) {
-              setIsPaid(true);
-              setPlanTier(data.plan_tier || 'full');
-              setCurrentPlanId(data.id); // Sync ID
-              devLog("✅ Payment confirmed! User unlocked.");
+            if (data && !error) {
+              if (data.is_paid) {
+                setIsPaid(true);
+                setPlanTier(data.plan_tier || 'full');
+                setCurrentPlanId(data.id); // Sync ID
+                devLog("✅ Payment confirmed! User unlocked.");
+              }
             }
           }
+        } finally {
+          setIsPaymentVerifying(false); // STOP SPINNER
         }
       };
       refetchAfterPayment();
     }
   }, []);
+
+  // MANUAL REFRESH HANDLER (Passed to Dashboard)
+  const handleManualRefresh = async () => {
+    if (!session?.user?.id) return;
+
+    setIsPaymentVerifying(true);
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (data && !error && data.is_paid) {
+        setIsPaid(true);
+        setPlanTier(data.plan_tier || 'full');
+        setCurrentPlanId(data.id);
+        alert("Status Updated: Plan is Unlocked! 🔓");
+      } else {
+        alert("Status Check: Plan is still locked. If you just paid, please wait a moment and try again.");
+      }
+    } catch (e) {
+      console.error("Manual refresh failed", e);
+    } finally {
+      setIsPaymentVerifying(false);
+    }
+  };
 
   // PERSISTENCE EFFECT
   useEffect(() => {
@@ -520,6 +552,19 @@ const App: React.FC = () => {
         </button>
       </footer>
 
+      {/* PAYMENT PROCESSING OVERLAY */}
+      {
+        isPaymentVerifying && (
+          <div className="fixed inset-0 z-[60] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center text-center max-w-sm mx-4">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+              <h3 className="text-xl font-black text-dark mb-2">Verifying Payment...</h3>
+              <p className="text-slate-500 font-medium">Securely confirming your transaction with the payment provider.</p>
+            </div>
+          </div>
+        )
+      }
+
       <style>{`
         @keyframes progress-indeterminate {
             0% { width: 0%; margin-left: 0%; }
@@ -530,7 +575,7 @@ const App: React.FC = () => {
             animation: progress-indeterminate 2s infinite ease-in-out;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 

@@ -15,6 +15,7 @@ interface DashboardProps {
     userId?: string;
     userEmail?: string;
     planId?: string | null; // NEW: Specific Plan ID
+    onRefresh?: () => void; // UX Feature B
 }
 
 // --- AUDIO HAPTICS ---
@@ -186,7 +187,7 @@ const MealDetail: React.FC<{ meal: Meal; type: string; isReheat?: boolean }> = (
     );
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, userEmail, planId }) => {
+const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, userEmail, planId, onRefresh }) => {
     const [activeMonthKey, setActiveMonthKey] = useState<'month1' | 'month2' | 'month3'>('month1');
     const [activeWeek, setActiveWeek] = useState(0);
     const [viewMode, setViewMode] = useState<'meals' | 'groceries'>('meals');
@@ -659,10 +660,23 @@ const Dashboard: React.FC<DashboardProps> = ({ plan, isPaid, planTier, userId, u
 
                                         {/* Lock Overlay */}
                                         {isLocked && (
-                                            <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] flex items-center justify-center">
+                                            <div className="absolute inset-0 z-10 bg-white/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3">
                                                 <div className="bg-white p-4 rounded-full shadow-2xl scale-110">
                                                     <Lock className="w-8 h-8 text-slate-300" />
                                                 </div>
+                                                {/* Phase 3: Manual Refresh Button */}
+                                                {onRefresh && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            playPop();
+                                                            onRefresh();
+                                                        }}
+                                                        className="bg-white/90 hover:bg-white text-[10px] uppercase font-bold text-primary px-3 py-1.5 rounded-full shadow-sm border border-slate-100 transition-all hover:scale-105 active:scale-95"
+                                                    >
+                                                        Paid? Check Status
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
                                     </div>
