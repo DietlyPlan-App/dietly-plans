@@ -154,8 +154,8 @@ serve(async (req: Request) => {
 
             // SECURITY ID: 35 (Amount Validation)
             // 9.99 or 19.99. Let's enforce a minimum of $9.00 to prevent 'penny' attacks.
-            // Adjust threshold based on currency if needed, but assuming USD for now.
-            if (amount < 9) {
+            // FIX: Allow 0.00 for 100% Coupons/Admin Testing.
+            if (amount < 9 && amount !== 0) {
                 console.error(`🚨 FRAUD ALERT: Payment amount too low (${amount}). Ignoring unlock.`);
                 return new Response(JSON.stringify({ error: "Amount invalid" }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" },
